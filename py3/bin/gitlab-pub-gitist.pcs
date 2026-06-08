@@ -15,7 +15,7 @@ from bisos.gitist import gitist_seedInfo
 cntrlInfo = gitist_seedInfo.cmndsControlInfo
 
 cntrlInfo.brand = gitist_seedInfo.GitProviderBrand.Gitlab
-cntrlInfo.serverConfigPath = "~/gitlabHost.cfg"
+cntrlInfo.serverConfigPath = "~/gitlabHosts.cfg"
 cntrlInfo.serverConfigTag = "default"
 
 cntrlInfo.gitAccessType = gitist_seedInfo.GitAccessType.Anon

@@ -215,12 +215,19 @@ def getGitlab(
 
 
 def _githubCfg():
-    """ Read (url, token) from the github cfg INI at serverConfigPath[serverConfigTag]. """
+    """ Read (url, token) from the github cfg INI at serverConfigPath[serverConfigTag].
+
+    When serverConfigTag is unset, fall back to the [global] default tag (like
+    python-gitlab's gitlab cfg), then to "default".
+    """
     ci = gitist_seedInfo.cmndsControlInfo
     cfgPath = pathlib.Path(ci.serverConfigPath).expanduser()
     parser = configparser.ConfigParser()
     parser.read(str(cfgPath))
-    tag = ci.serverConfigTag or "default"
+    tag = ci.serverConfigTag
+    if not tag and parser.has_section("global"):
+        tag = parser["global"].get("default")
+    tag = tag or "default"
     section = parser[tag] if parser.has_section(tag) else {}
     url = section.get("url") or None          # absent => public github.com
     token = section.get("token") or None

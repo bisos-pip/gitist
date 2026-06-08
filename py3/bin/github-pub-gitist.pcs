@@ -15,7 +15,7 @@ from bisos.gitist import gitist_seedInfo
 cntrlInfo = gitist_seedInfo.cmndsControlInfo
 
 cntrlInfo.brand = gitist_seedInfo.GitProviderBrand.Github
-cntrlInfo.serverConfigPath = "~/githubHost.cfg"
+cntrlInfo.serverConfigPath = "~/githubHosts.cfg"
 cntrlInfo.serverConfigTag = "default"
 
 cntrlInfo.gitAccessType = gitist_seedInfo.GitAccessType.Anon
