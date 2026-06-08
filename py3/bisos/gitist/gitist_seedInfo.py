@@ -81,15 +81,77 @@ from bisos.common import csParam
 import collections
 # ####+END:
 
-from dataclasses import dataclass, field
+import enum
+from dataclasses import dataclass
 
-from bisos.csSeed import cmnds_seedInfo
+# from bisos.csSeed import cmnds_seedInfo
 
 ####+BEGIN: bx:cs:py3:section :title "Public Classes"
 """ #+begin_org
 *  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  /Section/    [[elisp:(outline-show-subtree+toggle)][||]] *Public Classes*  [[elisp:(org-cycle)][| ]]
 #+end_org """
 ####+END:
+
+####+BEGIN: bx:dblock:python:enum :enumName " GitProviderBrand" :comment ""
+""" #+begin_org
+*  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  Enum       [[elisp:(outline-show-subtree+toggle)][||]] / GitProviderBrand/  [[elisp:(org-cycle)][| ]]
+#+end_org """
+@enum.unique
+class  GitProviderBrand(enum.Enum):
+####+END:
+        Gitlab = "gitlab"
+        Github = "github"
+
+
+@enum.unique
+class GitAccessType(enum.Enum):
+    Anon = "anon"
+    Auth = "auth"
+
+
+@enum.unique
+class GitAuthAccessMethod(enum.Enum):
+    Ssh = "ssh"
+    Https = "https"
+    SshOverHttps = "sshOverHttps"
+
+
+####+BEGIN: b:py3:class/decl :className "CmndsControlInfo" :superClass "object" :classType "basic" :deco "@dataclass" :comment "Abstraction of a  Interface"
+""" #+begin_org
+*  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  Cls-basic  [[elisp:(outline-show-subtree+toggle)][||]] /CmndsControlInfo/  superClass=object =Abstraction of a  Interface=  [[elisp:(org-cycle)][| ]]
+#+end_org """
+@dataclass
+class CmndsControlInfo(object):
+####+END:
+    """
+** Abstraction of
+"""
+
+    brand: GitProviderBrand | None = None
+
+    # gitlab: python-gitlab `Gitlab.from_config(serverConfigTag, [serverConfigPath])`
+    serverConfigPath: str | None = None
+    serverConfigTag: str | None = None
+
+    # clone access policy (consulted by reposClone for clone-URL selection)
+    gitAccessType: GitAccessType | None = None              # anon => public https; auth => use gitAuthAccessMethod
+    gitAuthAccessMethod: GitAuthAccessMethod | None = None   # ssh / https / sshOverHttps (only when Auth)
+    gitAccessAcct: str | None = None                         # ~/.ssh/config Host alias (ssh / sshOverHttps)
+
+####+BEGIN: b:py3:class/singleton  :comment ""
+    """ #+begin_org
+**  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  Singleton Class Enforcer [[elisp:(outline-show-subtree+toggle)][||]]   [[elisp:(org-cycle)][| ]]
+    #+end_org """
+    _instance = None
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+####+END:
+
+# Singleton Instantiation
+cmndsControlInfo = CmndsControlInfo()
+
 
 ####+BEGIN: b:py3:class/decl :className "GitistSeedInfo" :superClass "object" :classType "basic" :deco "@dataclass" :comment "Abstraction of a  Interface"
 """ #+begin_org
@@ -106,9 +168,7 @@ class GitistSeedInfo(object):
     examplesFuncsList: list[typing.Callable] | None = None
 
     # Specific SeedInfo
-    reactFramework: str | None = None
-    webVirtualDomain: str | None = None
-    dev_webPortNu: int | None = None
+    placeHolder: str | None = None
 
     def __post_init__(self):
         # default_factory machinery does not have access to self, hence in post_init:
@@ -143,9 +203,7 @@ gitistSeedInfo = GitistSeedInfo()
 def setup(
 ####+END:
         examplesFuncsList: list[typing.Callable] | None =None,
-        reactFramework: str | None = None,
-        webVirtualDomain: str | None = None,
-        dev_webPortNu: int | None = None,
+        placeHolder: str | None = None,
 ):
     """ #+begin_org
 ** [[elisp:(org-cycle)][| *DocStr | ]
@@ -155,9 +213,8 @@ def setup(
         cmnds_seedInfo.setup(
             examplesFuncsList=examplesFuncsList,
         )
-    gitistSeedInfo.reactFramework = reactFramework
-    gitistSeedInfo.webVirtualDomain = webVirtualDomain
-    gitistSeedInfo.dev_webPortNu = dev_webPortNu
+    gitistSeedInfo.placeHolder = placeHolder
+
 
 ####+BEGIN: b:py3:cs:framework/endOfFile :basedOn "classification"
 """ #+begin_org

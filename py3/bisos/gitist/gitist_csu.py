@@ -96,6 +96,9 @@ import collections
 
 import pathlib
 import enum
+import subprocess
+
+import gitlab
 
 from bisos.gitist import gitist_seedInfo
 
@@ -124,7 +127,17 @@ def commonParamsSpecify(
 ####+END:
         csParams: cs.param.CmndParamDict,
 ) -> None:
-    pass
+    csParams.parDictAdd(
+        parName='destBaseDir',
+        parDescription="Destination base directory under which repos are cloned (mirroring path_with_namespace).",
+        parDataType=None,
+        parDefault=None,
+        parChoices=list(),
+        argparseShortOpt=None,
+        argparseLongOpt='--destBaseDir',
+    )
+
+
 
 ####+BEGIN: blee:bxPanel:foldingSection :outLevel 0 :sep nil :title "Direct Command Services" :anchor ""  :extraInfo "Examples and CSs"
 """ #+begin_org
@@ -178,218 +191,63 @@ facterModule.cs -i examples
         pars_debug_invoke = od([('callTrackings', "invoke+"),])
         pars_debug_full = (pars_debug_verbosity | pars_debug_monitor | pars_debug_invoke)
 
-        pars_cluster_default = od([('cluster', "default"),])
-
-        cs.examples.menuChapter('=Determine Which React Framework is Being Used=')
-        cmnd('whichReactFramework', comment=f"""# DEBUG Small Batch""",)
-
-        cs.examples.menuChapter('=MONITOR Nginx and related services=')
-        literal("nginx-sysd.pcs")
-        literal("nginx-sysd.pcs -i sysdSysUnit  status")
-        literal("journalctl -u nginx 200  # Traffic in and out of nginx")
-
-        cs.examples.menuChapter('=RESTART Nginx and related services=')
-        literal("nginx-sysd.pcs -i sysdSysUnit  restart")
-
-        cs.examples.menuChapter('=React/Gatsby NPM Development=')
-
-        reactFramework = whichReactFramework_()
-        if reactFramework == ReactFramework.React:
-            literal("npm run watch")
-        elif reactFramework == ReactFramework.Gatsby:
-            literal("gatsby develop")
-        elif  reactFramework== ReactFramework.NoneFound:
-            log.info("No React framework detected; skipping Nginx restart.")
-
-        cs.examples.menuChapter('=React/Gatsby NPM Production Build=')
-
-        reactFramework = whichReactFramework_()
-        if reactFramework == ReactFramework.React:
-            literal("npm run build")
-            literal("npm run build && nginx-sysd.pcs -i sysdSysUnit  restart") 
-            literal("npm run clean && npm install && npm run build && nginx-sysd.pcs -i sysdSysUnit  restart")
-        elif reactFramework == ReactFramework.Gatsby:
-            literal("gatsby build")
-            literal("gatsby build && nginx-sysd.pcs -i sysdSysUnit  restart")
-            literal("gatsby clean && npm install && gatsby build && nginx-sysd.pcs -i sysdSysUnit  restart")
-        elif  reactFramework== ReactFramework.NoneFound:
-            log.info("No React framework detected; skipping Nginx restart.")
-
-        cs.examples.menuChapter('=React/Gatsby NPM Clean=')
-
-        reactFramework = whichReactFramework_()
-        if reactFramework == ReactFramework.React:
-            literal("npm run clean")
-            literal("npm run clean && nginx-sysd.pcs -i sysdSysUnit  restart")
-        elif reactFramework == ReactFramework.Gatsby:
-            literal("gatsby clean")
-            literal("gatsby clean && nginx-sysd.pcs -i sysdSysUnit  restart")
-        elif  reactFramework== ReactFramework.NoneFound:
-            log.info("No React framework detected; skipping Nginx restart.")
-
         return(cmndOutcome)
 
 
-
-####+BEGIN: b:py3:cs:cmnd/classHead :cmndName "examples_seed" :comment "" :parsMand "" :parsOpt "" :argsMin 0 :argsMax 0 :pyInv "pyKwArgs"
+####+BEGIN: b:py3:cs:func/typing :funcName "getGitlab" :comment "~CSU Specification~" :funcType "ParSpc" :deco ""
 """ #+begin_org
-*  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  CmndSvc-   [[elisp:(outline-show-subtree+toggle)][||]] <<examples_seed>>  =verify= ro=cli pyInv=pyKwArgs   [[elisp:(org-cycle)][| ]]
+*  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  F-T-ParSpc [[elisp:(outline-show-subtree+toggle)][||]] /getGitlab/  ~CSU Specification~  [[elisp:(org-cycle)][| ]]
 #+end_org """
-class examples_seed(cs.Cmnd):
+def getGitlab(
+####+END:
+) -> gitlab.Gitlab:
+    """ #+begin_org
+** Build a python-gitlab client from =cmndsControlInfo= (=serverConfigTag=, =serverConfigPath=).
+    #+end_org """
+    ci = gitist_seedInfo.cmndsControlInfo
+    cfgPath = str(pathlib.Path(ci.serverConfigPath).expanduser())
+    gl = gitlab.Gitlab.from_config(ci.serverConfigTag, [cfgPath])
+    return gl
+
+
+def groupProjects(groupPath: str):
+    """ List the projects under a gitlab group or group/subgroup path. """
+    gl = getGitlab()
+    group = gl.groups.get(groupPath)
+    return group.projects.list(get_all=True)
+
+
+def cloneUrlForProject(proj) -> str:
+    """ Choose the clone URL per cmndsControlInfo access policy. """
+    ci = gitist_seedInfo.cmndsControlInfo
+    GAT = gitist_seedInfo.GitAccessType
+    GAM = gitist_seedInfo.GitAuthAccessMethod
+
+    if ci.gitAccessType == GAT.Auth:
+        if ci.gitAuthAccessMethod in (GAM.Ssh, GAM.SshOverHttps):
+            sshUrl = proj.ssh_url_to_repo                       # git@HOST:ns/proj.git
+            if ci.gitAccessAcct:
+                pathPart = sshUrl.partition('@')[2].partition(':')[2]
+                return f"git@{ci.gitAccessAcct}:{pathPart}"     # host -> ~/.ssh/config alias
+            return sshUrl
+        if ci.gitAuthAccessMethod == GAM.Https:
+            httpUrl = proj.http_url_to_repo                     # https://HOST/ns/proj.git
+            token = getGitlab().private_token
+            if token and httpUrl.startswith("https://"):
+                return httpUrl.replace("https://", f"https://oauth2:{token}@", 1)
+            return httpUrl
+
+    return proj.http_url_to_repo                                # anon => public https
+
+
+####+BEGIN: b:py3:cs:cmnd/classHead :cmndName "gitist_reposList" :comment "" :extent "verify" :ro "cli" :parsMand "" :parsOpt "" :argsMin 0 :argsMax 1 :pyInv ""
+""" #+begin_org
+*  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  CmndSvc-   [[elisp:(outline-show-subtree+toggle)][||]] <<gitist_reposList>>  =verify= argsMax=1 ro=cli   [[elisp:(org-cycle)][| ]]
+#+end_org """
+class gitist_reposList(cs.Cmnd):
     cmndParamsMandatory = [ ]
     cmndParamsOptional = [ ]
-    cmndArgsLen = {'Min': 0, 'Max': 0,}
-
-    @cs.track(fnLoc=True, fnEntry=True, fnExit=True)
-    def cmnd(self,
-             rtInv: cs.RtInvoker,
-             cmndOutcome: b.op.Outcome,
-             pyKwArgs: typing.Any=None,   # pyInv Argument
-    ) -> b.op.Outcome:
-
-        failed = b_io.eh.badOutcome
-        callParamsDict = {}
-        if self.invocationValidate(rtInv, cmndOutcome, callParamsDict, None).isProblematic():
-            return failed(cmndOutcome)
-####+END:
-        self.cmndDocStr(f""" #+begin_org
-** [[elisp:(org-cycle)][| *CmndDesc:* | ]]  pyKwArgs 'upload' is mandatory
-        #+end_org """)
-
-        self.captureRunStr(""" #+begin_org
-*** Run Results
-#+begin_src sh :results output :session shared
-facterModule.cs -i examples
-  #+end_src
-#+RESULTS:
-#+begin_example
-#+end_example
-
-        #+end_org """)
-
-        examples_csu().pyCmnd()
-
-        cs.examples.menuChapter('=Planted CS Info=')
-
-        # assert gitist_seedInfo.gitistSeedInfo.reactFramework == whichReactFramework_()
-
-        cwd = pathlib.Path.cwd()
-
-        print(f"{cwd}")
-        print(f"bx-browse-url.sh  http://{gitist_seedInfo.gitistSeedInfo.webVirtualDomain}")
-        print(f"bx-browse-url.sh  http://localhost:{gitist_seedInfo.gitistSeedInfo.dev_webPortNu}")
-
-        return(cmndOutcome)
-
-####+BEGIN: bx:dblock:python:enum :enumName "ReactFramework" :comment ""
-""" #+begin_org
-*  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  Enum       [[elisp:(outline-show-subtree+toggle)][||]] /ReactFramework/  [[elisp:(org-cycle)][| ]]
-#+end_org """
-@enum.unique
-class ReactFramework(enum.Enum):
-####+END:
-        React = "react"
-        Gatsby = "gatsby"
-        NoneFound = "noneFound"
-
-####+BEGIN: b:py3:cs:func/typing :funcName "whichReactFramework_" :funcType "extTyped" :deco "track"
-""" #+begin_org
-*  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  F-T-extTyped [[elisp:(outline-show-subtree+toggle)][||]] /whichReactFramework_/  deco=track  [[elisp:(org-cycle)][| ]]
-#+end_org """
-@cs.track(fnLoc=True, fnEntry=True, fnExit=True)
-def whichReactFramework_(
-####+END:
-) -> ReactFramework:
-        """ #+begin_org
-** [[elisp:(org-cycle)][| *DocStr | ] Look in the current directory for files that indicate which React framework is being used.
-        #+end_org """
-        # Check for Gatsby-specific configuration files
-        current_dir = pathlib.Path('.')
-        
-        # Gatsby indicators
-        gatsby_config_files = [
-            'gatsby-config.js',
-            'gatsby-config.ts',
-            'gatsby-config.mjs',
-        ]
-        
-        for gatsby_file in gatsby_config_files:
-            if (current_dir / gatsby_file).exists():
-                return ReactFramework.Gatsby
-        
-        # Check for .gatsby-files marker directory
-        if (current_dir / '.gatsby-files').exists():
-            return ReactFramework.Gatsby
-        
-        # Check for pure React config files (CRA or similar)
-        react_config_files = [
-            'package.json',  # All React projects have this
-            'react-scripts',  # CRA dependency (in node_modules, but check package.json)
-        ]
-        
-        # Check if package.json exists and contains react/react-scripts
-        package_json_path = current_dir / 'package.json'
-        if package_json_path.exists():
-            try:
-                import json
-                with open(package_json_path, 'r') as f:
-                    package_data = json.load(f)
-                    # Check if react or react-scripts is in dependencies
-                    deps = package_data.get('dependencies', {})
-                    devDeps = package_data.get('devDependencies', {})
-                    if 'react' in deps or 'react' in devDeps or 'react-scripts' in devDeps:
-                        return ReactFramework.React
-            except (json.JSONDecodeError, IOError):
-                pass
-        
-        # If neither Gatsby nor React found, return NoneFound
-        return ReactFramework.NoneFound
-
-
-
-####+BEGIN: b:py3:cs:cmnd/classHead :cmndName "whichReactFramework" :comment "" :extent "verify" :ro "cli" :parsMand "" :parsOpt "" :argsMin 0 :argsMax 0 :pyInv ""
-""" #+begin_org
-*  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  CmndSvc-   [[elisp:(outline-show-subtree+toggle)][||]] <<whichReactFramework>>  =verify= ro=cli   [[elisp:(org-cycle)][| ]]
-#+end_org """
-class whichReactFramework(cs.Cmnd):
-    cmndParamsMandatory = [ ]
-    cmndParamsOptional = [ ]
-    cmndArgsLen = {'Min': 0, 'Max': 0,}
-
-    @cs.track(fnLoc=True, fnEntry=True, fnExit=True)
-    def cmnd(self,
-             rtInv: cs.RtInvoker,
-             cmndOutcome: b.op.Outcome,
-    ) -> b.op.Outcome:
-
-        failed = b_io.eh.badOutcome
-        callParamsDict = {}
-        if self.invocationValidate(rtInv, cmndOutcome, callParamsDict, None).isProblematic():
-            return failed(cmndOutcome)
-####+END:
-        self.cmndDocStr(f""" #+begin_org
-** [[elisp:(org-cycle)][| *CmndDesc:* | ]]
-Detect which React framework is being used in the current directory.
-        #+end_org """)
-
-        result: ReactFramework = whichReactFramework_()
-        
-        #print(f"{result.value}")
-
-        return cmndOutcome.set(
-                opError=b.OpError.Success,
-                opResults=result,
-        )
-
-
-####+BEGIN: b:py3:cs:cmnd/classHead :cmndName "placeHolder" :comment "" :extent "verify" :ro "cli" :parsMand "" :parsOpt "" :argsMin 0 :argsMax 9999 :pyInv ""
-""" #+begin_org
-*  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  CmndSvc-   [[elisp:(outline-show-subtree+toggle)][||]] <<placeHolder>>  =verify= argsMax=9999 ro=cli   [[elisp:(org-cycle)][| ]]
-#+end_org """
-class placeHolder(cs.Cmnd):
-    cmndParamsMandatory = [ ]
-    cmndParamsOptional = [ ]
-    cmndArgsLen = {'Min': 0, 'Max': 9999,}
+    cmndArgsLen = {'Min': 0, 'Max': 1,}
 
     @cs.track(fnLoc=True, fnEntry=True, fnExit=True)
     def cmnd(self,
@@ -411,43 +269,29 @@ class placeHolder(cs.Cmnd):
         self.captureRunStr(""" #+begin_org
 *** Run Results
 #+begin_src sh :results output :session shared
-echo 127.0.0.1 | facterModule.cs --upload=../../bin/facterModuleSample.py  -i clusterRun localhost otherHost
+gitlab-pub-gitist.pcs -i gitist_reposList mohsen.byname-group
   #+end_src
 #+RESULTS:
-: ['localhost', 'otherHost', '127.0.0.1']
-: ** cmnd= env CHECKPOINT_DISABLE=1 echo  localhost
-: localhost
-: ** cmnd= env CHECKPOINT_DISABLE=1 echo  otherHost
-: otherHost
-: ** cmnd= env CHECKPOINT_DISABLE=1 echo  127.0.0.1
-: 127.0.0.1
-: ReRun this as subprocs
-
+: 79388111 mohsen.byname-group/mohsen.byname-project
+: [{'id': 79388111, 'path': 'mohsen.byname-group/mohsen.byname-project'}]
         #+end_org """)
 
-        cmndArgs = self.cmndArgsGet("0&9999", cmndArgsSpecDict, argsList)
-        effectiveClustersList = []
+        cmndArgs = self.cmndArgsGet("0&1", cmndArgsSpecDict, argsList)
+        if not cmndArgs:
+            log.error("A gitlab group path argument is required.")
+            return failed(cmndOutcome)
+        groupPath = cmndArgs[0]
 
-        def processArgsAndStdin(cmndArgs, process):
-            for each in cmndArgs:
-                process(each)
-            stdinArgs = b_io.stdin.readAsList()
-            for each in stdinArgs:
-                process(each)
+        projects = groupProjects(groupPath)
 
-        def process(item):
-            effectiveClustersList.append(item)
-            if rtInv.outs:
-                # print(f"target: {target}")
-                pass
-
-        processArgsAndStdin(cmndArgs, process)
-
-        print(f"{effectiveClustersList}")
+        repos = []
+        for p in projects:
+            print(p.id, p.path_with_namespace)
+            repos.append({"id": p.id, "path": p.path_with_namespace})
 
         return cmndOutcome.set(
             opError=b.OpError.Success,
-            opResults=None,
+            opResults=repos,
         )
 
 
@@ -464,11 +308,103 @@ echo 127.0.0.1 | facterModule.cs --upload=../../bin/facterModuleSample.py  -i cl
         cmndArgsSpecDict = cs.CmndArgsSpecDict()
 
         cmndArgsSpecDict.argsDictAdd(
-            argPosition="0&9999",
+            argPosition="0&1",
             argName="cmndArgs",
             argDefault='',
             argChoices=[],
-            argDescription="Targets"
+            argDescription="GroupPath"
+        )
+
+        return cmndArgsSpecDict
+
+
+####+BEGIN: b:py3:cs:cmnd/classHead :cmndName "gitist_reposClone" :comment "" :extent "verify" :ro "cli" :parsMand "destBaseDir" :parsOpt "" :argsMin 0 :argsMax 1 :pyInv ""
+""" #+begin_org
+*  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  CmndSvc-   [[elisp:(outline-show-subtree+toggle)][||]] <<gitist_reposClone>>  =verify= parsMand=destBaseDir argsMax=1 ro=cli   [[elisp:(org-cycle)][| ]]
+#+end_org """
+class gitist_reposClone(cs.Cmnd):
+    cmndParamsMandatory = [ 'destBaseDir', ]
+    cmndParamsOptional = [ ]
+    cmndArgsLen = {'Min': 0, 'Max': 1,}
+
+    @cs.track(fnLoc=True, fnEntry=True, fnExit=True)
+    def cmnd(self,
+             rtInv: cs.RtInvoker,
+             cmndOutcome: b.op.Outcome,
+             destBaseDir: typing.Optional[str]=None,  # Cs Mandatory Param
+             argsList: typing.Optional[list[str]]=None,  # CsArgs
+    ) -> b.op.Outcome:
+
+        failed = b_io.eh.badOutcome
+        callParamsDict = {'destBaseDir': destBaseDir, }
+        if self.invocationValidate(rtInv, cmndOutcome, callParamsDict, argsList).isProblematic():
+            return failed(cmndOutcome)
+        cmndArgsSpecDict = self.cmndArgsSpec()
+####+END:
+        self.cmndDocStr(f""" #+begin_org
+** [[elisp:(org-cycle)][| *CmndDesc:* | ]] Clone every repo of a gitlab group under destBaseDir (mirroring path_with_namespace; skip if exists).
+        #+end_org """)
+
+        self.captureRunStr(""" #+begin_org
+*** Run Results
+#+begin_src sh :results output :session shared
+gitlab-pub-gitist.pcs -i gitist_reposClone --destBaseDir=/tmp/gitistTest mohsen.byname-group
+  #+end_src
+#+RESULTS:
+        #+end_org """)
+
+        cmndArgs = self.cmndArgsGet("0&1", cmndArgsSpecDict, argsList)
+        if not cmndArgs:
+            log.error("A gitlab group path argument is required.")
+            return failed(cmndOutcome)
+        groupPath = cmndArgs[0]
+
+        baseDir = pathlib.Path(destBaseDir).expanduser()
+
+        results = []
+        for proj in groupProjects(groupPath):
+            dest = baseDir / proj.path_with_namespace
+            if dest.exists():
+                print(f"skipped (exists): {dest}")
+                results.append({"path": proj.path_with_namespace, "dest": str(dest), "status": "skipped"})
+                continue
+
+            url = cloneUrlForProject(proj)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            print(f"cloning: {proj.path_with_namespace} -> {dest}")
+            completed = subprocess.run(
+                ["git", "clone", url, str(dest)],
+                capture_output=True, text=True,
+            )
+            if completed.returncode != 0:
+                log.error(f"clone failed for {proj.path_with_namespace}: {completed.stderr.strip()}")
+                results.append({"path": proj.path_with_namespace, "dest": str(dest), "status": "failed"})
+                continue
+            results.append({"path": proj.path_with_namespace, "dest": str(dest), "status": "cloned"})
+
+        return cmndOutcome.set(
+            opError=b.OpError.Success,
+            opResults=results,
+        )
+
+####+BEGIN: b:py3:cs:method/args :methodName "cmndArgsSpec" :methodType "anyOrNone" :retType "bool" :deco "default" :argsList "self"
+    """ #+begin_org
+**  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  Mtd-T-anyOrNone [[elisp:(outline-show-subtree+toggle)][||]] /cmndArgsSpec/ deco=default  deco=default  [[elisp:(org-cycle)][| ]]
+    #+end_org """
+    @cs.track(fnLoc=True, fnEntry=True, fnExit=True)
+    def cmndArgsSpec(self, ):
+####+END:
+        """
+***** Cmnd Args Specification
+"""
+        cmndArgsSpecDict = cs.CmndArgsSpecDict()
+
+        cmndArgsSpecDict.argsDictAdd(
+            argPosition="0&1",
+            argName="cmndArgs",
+            argDefault='',
+            argChoices=[],
+            argDescription="GroupPath"
         )
 
         return cmndArgsSpecDict

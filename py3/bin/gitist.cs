@@ -4,16 +4,16 @@
 import typing ; csInfo: typing.Dict[str, typing.Any] = {'category': 'csxu', 'name': 'gitist.cs', 'features': ['direct', 'uploader', 'seeded']}
 
 csInfo['summary'] = """ #+begin_org
-* ~[Summary]~ :: A =CmndSvc= (Pkged, Direct, Seeded, Uploadable) for uploading and absorbing a facterModule.
+* ~[Summary]~ :: A =CmndSvc= (Pkged, Direct, Seeded, Uploadable) seed for git mass-cloning of github and gitlab.
 #+end_org """
 
 csInfo['description'] = """ #+begin_org
-* [[elisp:(org-cycle)][| ~csInfoDescription~ |]] :: A facter uploadable-module executor. The module specified
-with the --upload param is loaded and absorbed so that it can be played and executed.
+* [[elisp:(org-cycle)][| ~csInfoDescription~ |]] :: The gitist seed. Plants (e.g. =pubGitlab-gitist.pcs=) extend it
+to clone across github and gitlab (public and private) instances.
 #+end_org """
 
 """ #+begin_org
-* [[elisp:(org-cycle)][| ~DevDescription~ |]] :: [[file:/bisos/panels/bisos-core/bisos-pip/bisos.tocsModules/_nodeBase_/fullUsagePanel-en.org][BISOS Panel]]   [[elisp:(org-cycle)][| ]]
+* [[elisp:(org-cycle)][| ~DevDescription~ |]] :: [[file:/bisos/git/bxRepos/bisos-pip/gitist/py3/panels/bisos.gitist/_nodeBase_/fullUsagePanel-en.org][BISOS Panel]]   [[elisp:(org-cycle)][| ]]
 
 ** Status: In use with BISOS
 ** /[[elisp:(org-cycle)][| Planned Improvements |]]/ :
@@ -44,8 +44,8 @@ with the --upload param is loaded and absorbed so that it can be played and exec
 ####+BEGIN: b:prog:file/particulars :authors ("./inserts/authors-mb.org")
 """ #+begin_org
 * *[[elisp:(org-cycle)][| Particulars |]]* :: Authors, version
-** This File: /bisos/git/bxRepos/bisos-pip/loadAsCs/py3/bin/loadAs.cs
-** File True Name: /bisos/git/auth/bxRepos/bisos-pip/loadAsCs/py3/bin/loadAs.cs
+** This File: /bisos/git/bxRepos/bisos-pip/gitist/py3/bin/gitist.cs
+** File True Name: /bisos/git/auth/bxRepos/bisos-pip/gitist/py3/bin/gitist.cs
 ** Authors: Mohsen BANAN, http://mohsen.banan.1.byname.net/contact
 #+end_org """
 ####+END:
@@ -54,10 +54,10 @@ with the --upload param is loaded and absorbed so that it can be played and exec
 """ #+begin_org
 * *[[elisp:(org-cycle)][| Particulars-csInfo |]]*
 #+end_org """
-if 'csInfo' not in globals(): import typing ; csInfo: typing.Dict[str, typing.Any] = { 'moduleName': ['loadAs'], }
+if 'csInfo' not in globals(): import typing ; csInfo: typing.Dict[str, typing.Any] = { 'moduleName': ['gitist'], }
 csInfo['version'] = '202509285407'
 csInfo['status']  = 'inUse'
-csInfo['panel'] = 'loadAs-Panel.org'
+csInfo['panel'] = 'gitist-Panel.org'
 csInfo['groupingType'] = 'IcmGroupingType-pkged'
 csInfo['cmndParts'] = 'IcmCmndParts[common] IcmCmndParts[param]'
 ####+END:
@@ -118,22 +118,24 @@ if seedsLib.seededCsxuInfo.plantOfThisSeed is not None:
   (list
    "bisos.csPlayer.csxuFps_csu"
    "bisos.gitist.gitist_csu"
+   "bisos.csSeed.csCmndsList_csu"
    "plantedCsu"
  ))
 #+END_SRC
 #+RESULTS:
-| bisos.csPlayer.csxuFps_csu | bisos.gitist.gitist_csu | plantedCsu |
+| bisos.csPlayer.csxuFps_csu | bisos.gitist.gitist_csu | bisos.csSeed.csCmndsList_csu | plantedCsu |
 #+end_org """
 
 ####+BEGIN: b:py3:cs:framework/csuListImportPlus :pyImports t :csuImports t :csuParams t :csmuParams nil
 """ #+begin_org
-*  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  CsFrmWrk   [[elisp:(outline-show-subtree+toggle)][||]] ~Process CSU List~ with /3/ in csuList pyImports=t csuImports=t csuParams=t
+*  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  CsFrmWrk   [[elisp:(outline-show-subtree+toggle)][||]] ~Process CSU List~ with /4/ in csuList pyImports=t csuImports=t csuParams=t
 #+end_org """
 
 from bisos.csPlayer import csxuFps_csu
 from bisos.gitist import gitist_csu
+from bisos.csSeed import csCmndsList_csu
 
-csuList = [ 'bisos.csPlayer.csxuFps_csu', 'bisos.gitist.gitist_csu', 'plantedCsu', ]
+csuList = [ 'bisos.csPlayer.csxuFps_csu', 'bisos.gitist.gitist_csu', 'bisos.csSeed.csCmndsList_csu', 'plantedCsu', ]
 
 if seedsLib.seededCsxuInfo.plantOfThisSeed is None:
     csuList.remove('plantedCsu')
@@ -196,11 +198,11 @@ class examples(cs.Cmnd):
         csxuFps_csu.playerMenuExamples().pyCmnd()
 
         if seedsLib.seededCsxuInfo.seedOfThisPlant is None:
-            gitist_csu.examples_csu().pyCmnd(
+            csCmndsList_csu.examples_csu().pyCmnd(
                 # pyKwArgs={'uploadPath': uploadPathAbs}
             )
         else:
-            gitist_csu.examples_seed().pyCmnd(
+            csCmndsList_csu.examples_seed().pyCmnd(
                  # pyKwArgs={'uploadPath': uploadPathAbs}
             )
             seedsLib.plantedCsuExamplesRun()

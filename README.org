@@ -1,4 +1,4 @@
-#+title: bisos.gitist:  BISOS Web Capabilities
+#+title: bisos.gitist:  Git Mass Cloning and More
 #+DATE: <2026-06-05 Fri 16:59>
 #+AUTHOR: Mohsen BANAN
 #+OPTIONS: toc:4
@@ -7,26 +7,26 @@
 
 |----------------------+------------------------------------------------------------------|
 | ~Blee Panel Controls~: | [[elisp:(show-all)][Show-All]] : [[elisp:(org-shifttab)][Overview]] : [[elisp:(progn (org-shifttab) (org-content))][Content]] : [[elisp:(delete-other-windows)][(1)]] : [[elisp:(progn (save-buffer) (kill-buffer))][S&Q]] : [[elisp:(save-buffer)][Save]]  : [[elisp:(kill-buffer)][Quit]]  : [[elisp:(bury-buffer)][Bury]] |
-| ~Panel Links~:         | [[file:./py3/panels/bisos.webCap-csPlayers/_nodeBase_/fullUsagePanel-en.org][Repo Blee Panel]] --  [[file:/bisos/git/bxRepos/bisos-pip/webCap-csPlayers/py3/panels/bisos.webCap-csPlayers/_nodeBase_/fullUsagePanel-en.org][Blee Panel]]                                   |
-| ~See Also~:            | [[https://pypi.org/project/bisos.webCap-csPlayers][At PYPI]] : [[https://github.com/bisos-pip/pycs][bisos.PyCS]]                                             |
+| ~Panel Links~:         | [[file:./py3/panels/bisos.gitist/_nodeBase_/fullUsagePanel-en.org][Repo Blee Panel]] --  [[file:/bisos/git/bxRepos/bisos-pip/gitist/py3/panels/bisos.gitist/_nodeBase_/fullUsagePanel-en.org][Blee Panel]]                                   |
+| ~See Also~:            | [[https://pypi.org/project/bisos.gitist][At PYPI]] : [[https://github.com/bisos-pip/pycs][bisos.PyCS]]                                             |
 |----------------------+------------------------------------------------------------------|
 
 #+END:
 
 * Overview
 
-/bisos.gitist/ provides general facilities for creation of Web Capabilities.
+/bisos.gitist/ provides general facilities for mass cloning of public github and gitlab
+and also private gitlab instances.
 
 bisos.gitist is a python package that uses the  [[https://github.com/bisos-pip/pycs][PyCS-Framework]].
+
+gitist.cs is a seed. Common usages of gitist take the form of a gitistProc.pcs.
 
 
 
 * Table of Contents     :TOC:
 - [[#overview][Overview]]
-- [[#scope-of-bisos-web-capabilities-foundations][Scope of BISOS Web Capabilities Foundations]]
-  - [[#nginx][NGINX]]
-  - [[#python-back-end][Python Back-End]]
-  - [[#react-front-end][React Front End]]
+- [[#gitist-layers][Gitist Layers]]
 - [[#installation][Installation]]
   - [[#installation-with-pip][Installation With pip]]
   - [[#installation-with-pipx][Installation With pipx]]
@@ -37,27 +37,12 @@ bisos.gitist is a python package that uses the  [[https://github.com/bisos-pip/p
 - [[#support][Support]]
 - [[#planned-improvements][Planned Improvements]]
 
-* Scope of BISOS Web Capabilities Foundations
+* Gitist Layers
 
-** NGINX
-
-| nginx           | BISOS Module Name | Comment |
-| virtual domains |                   |         |
-
-** Python Back-End
-
-| django   | djangoAdmin.cs | Comment   |
-| postgres |                |           |
-| Gunicorn |                | Not uwsgi |
-| systemd  |                |           |
-
-** React Front End
-
-| react                                             | BISOS Resources | Comment |
-| gatsby                                            |                 |         |
-| reveal.js                                         |                 |         |
-| https://github.com/bouzidanas/react-reveal-slides |                 |         |
-
+1) PyCS Framework
+2) Seeded/Planted PyCS Framework (gitist.cs)
+3) Common csCmndsList (bisos.csSeed)
+4) Gitist Commands CSUs
 
 * Installation
 
@@ -93,6 +78,7 @@ pipx install bisos.gitist
 
 #+begin_src bash
 bin/gitist.cs
+bin/gitistProc.pcs
 #+end_src
 
 
