@@ -58,7 +58,6 @@ requires = [
 "bisos.common",
 "bisos.csPlayer",
 "bisos.csSeed",
-"bisos.webCap",
 "setuptools==75.8.0",
 "wheel==0.38.4",
 ]
@@ -68,8 +67,11 @@ requires = [
 ####+BEGIN: b:py3:pypi:setup/scripts :comment ""
 
 scripts = [
+'bin/bxoGitlab.cs',
+'bin/github-pub-gitist.pcs',
 'bin/gitist.cs',
-'bin/gitistProc.pcs',
+'bin/gitlab-pub-gitist.pcs',
+'bin/list_projects.py',
 ]
 ####+END:
 

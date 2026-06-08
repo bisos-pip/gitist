@@ -1,6 +1,6 @@
-====================================
-bisos.gitist: BISOS Web Capabilities
-====================================
+=======================================
+bisos.gitist: Git Mass Cloning and More
+=======================================
 
 .. contents::
    :depth: 3
@@ -9,11 +9,14 @@ bisos.gitist: BISOS Web Capabilities
 Overview
 ========
 
-*bisos.gitist* provides general facilities for creation of Web
-Capabilities.
+*bisos.gitist* provides general facilities for mass cloning of public
+github and gitlab and also private gitlab instances.
 
 bisos.gitist is a python package that uses the
 `PyCS-Framework <https://github.com/bisos-pip/pycs>`__.
+
+gitist.cs is a seed. Common usages of gitist take the form of a
+gitistProc.pcs.
 
 .. _table-of-contents:
 
@@ -21,13 +24,7 @@ Table of Contents TOC
 =====================
 
 -  `Overview <#overview>`__
--  `Scope of BISOS Web Capabilities
-   Foundations <#scope-of-bisos-web-capabilities-foundations>`__
-
-   -  `NGINX <#nginx>`__
-   -  `Python Back-End <#python-back-end>`__
-   -  `React Front End <#react-front-end>`__
-
+-  `Gitist Layers <#gitist-layers>`__
 -  `Installation <#installation>`__
 
    -  `Installation With pip <#installation-with-pip>`__
@@ -45,39 +42,13 @@ Table of Contents TOC
 -  `Support <#support>`__
 -  `Planned Improvements <#planned-improvements>`__
 
-Scope of BISOS Web Capabilities Foundations
-===========================================
+Gitist Layers
+=============
 
-NGINX
------
-
-=============== ================= =======
-nginx           BISOS Module Name Comment
-virtual domains                   
-=============== ================= =======
-
-Python Back-End
----------------
-
-======== ============== =========
-django   djangoAdmin.cs Comment
-postgres                
-Gunicorn                Not uwsgi
-systemd                 
-======== ============== =========
-
-React Front End
----------------
-
-+---------------------------------------------------+-----------------+---------+
-| react                                             | BISOS Resources | Comment |
-+---------------------------------------------------+-----------------+---------+
-| gatsby                                            |                 |         |
-+---------------------------------------------------+-----------------+---------+
-| reveal.js                                         |                 |         |
-+---------------------------------------------------+-----------------+---------+
-| https://github.com/bouzidanas/react-reveal-slides |                 |         |
-+---------------------------------------------------+-----------------+---------+
+#. PyCS Framework
+#. Seeded/Planted PyCS Framework (gitist.cs)
+#. Common csCmndsList (bisos.csSeed)
+#. Gitist Commands CSUs
 
 Installation
 ============
@@ -121,6 +92,7 @@ Local Usage (system command-line)
 .. code:: bash
 
    bin/gitist.cs
+   bin/gitistProc.pcs
 
 Documentation and Blee-Panels
 =============================

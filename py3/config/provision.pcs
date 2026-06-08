@@ -1,0 +1,67 @@
+#!/usr/bin/env python
+
+""" #+begin_org
+* Panel::  [[file:/bisos/git/auth/bxRepos/bisos-pip/b/py3/panels/bisos.b/bisos.b.cs/_nodeBase_/fullUsagePanel-en.org]]
+#+end_org """
+
+from bisos.csSeed import addCmnds_seed
+from bisos import b
+from bisos.b import cs
+from bisos.b import b_io
+
+
+####+BEGIN: b:py3:cs:cmnd/classHead :cmndName "credsSetup" :comment "" :parsMand "" :parsOpt "" :argsMin 0 :argsMax 0 :pyInv ""
+""" #+begin_org
+*  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  CmndSvc-   [[elisp:(outline-show-subtree+toggle)][||]] <<credsSetup>>  =verify= ro=cli   [[elisp:(org-cycle)][| ]]
+#+end_org """
+class credsSetup(cs.Cmnd):
+    cmndParamsMandatory = [ ]
+    cmndParamsOptional = [ ]
+    cmndArgsLen = {'Min': 0, 'Max': 0,}
+
+    @cs.track(fnLoc=True, fnEntry=True, fnExit=True)
+    def cmnd(self,
+             rtInv: cs.RtInvoker,
+             cmndOutcome: b.op.Outcome,
+    ) -> b.op.Outcome:
+
+        failed = b_io.eh.badOutcome
+        callParamsDict = {}
+        if self.invocationValidate(rtInv, cmndOutcome, callParamsDict, None).isProblematic():
+            return failed(cmndOutcome)
+####+END:
+        self.cmndDocStr(f""" #+begin_org
+** [[elisp:(org-cycle)][| *CmndDesc:* | ]]  Make sure that ~/credentials/git directory exists. copy .cfg s if needed.
+        If the ./githubHosts.cfg (and ./gitlabHosts.cfg) exist in there, do nothing.
+        #+end_org """)
+
+        self.captureRunStr(""" #+begin_org
+#+begin_src sh :results output :session shared
+  ./provision.pcs -i credsSetup
+#+end_src
+#+RESULTS:
+: Hello World
+        #+end_org """)
+
+        if self.justCaptureP(): return cmndOutcome
+
+        from pathlib import Path
+
+        credsGitDir = Path("~/credentials/git").expanduser()
+        credsGitDir.mkdir(parents=True, exist_ok=True)
+
+        scriptDir = Path(__file__).parent
+        for cfgFile in ("githubHosts.cfg", "gitlabHosts.cfg"):
+            dest = credsGitDir / cfgFile
+            if not dest.exists():
+                src = scriptDir / cfgFile
+                if src.exists():
+                    dest.write_bytes(src.read_bytes())
+
+        return cmndOutcome.set(
+            opError=b.OpError.Success,
+        )
+
+def examples_csu() -> None:
+    cs.examples.menuChapter('*Planted Examples::*')
+    cs.examples.cmndEnter('credsSetup',  comment=" # Just Saying Hello")
