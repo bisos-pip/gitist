@@ -240,6 +240,32 @@ def cloneUrlForProject(proj) -> str:
     return proj.http_url_to_repo                                # anon => public https
 
 
+def projectByPath(projectPath: str):
+    """ Resolve a single gitlab project by its full namespaced path (group/.../project). """
+    gl = getGitlab()
+    return gl.projects.get(projectPath)
+
+
+def cloneProject(proj, baseDir: pathlib.Path) -> dict:
+    """ Clone one project under baseDir/path_with_namespace; skip if it already exists. """
+    dest = baseDir / proj.path_with_namespace
+    if dest.exists():
+        print(f"skipped (exists): {dest}")
+        return {"path": proj.path_with_namespace, "dest": str(dest), "status": "skipped"}
+
+    url = cloneUrlForProject(proj)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    print(f"cloning: {proj.path_with_namespace} -> {dest}")
+    completed = subprocess.run(
+        ["git", "clone", url, str(dest)],
+        capture_output=True, text=True,
+    )
+    if completed.returncode != 0:
+        log.error(f"clone failed for {proj.path_with_namespace}: {completed.stderr.strip()}")
+        return {"path": proj.path_with_namespace, "dest": str(dest), "status": "failed"}
+    return {"path": proj.path_with_namespace, "dest": str(dest), "status": "cloned"}
+
+
 ####+BEGIN: b:py3:cs:cmnd/classHead :cmndName "gitist_reposList" :comment "" :extent "verify" :ro "cli" :parsMand "" :parsOpt "" :argsMin 0 :argsMax 1 :pyInv ""
 """ #+begin_org
 *  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  CmndSvc-   [[elisp:(outline-show-subtree+toggle)][||]] <<gitist_reposList>>  =verify= argsMax=1 ro=cli   [[elisp:(org-cycle)][| ]]
@@ -351,6 +377,8 @@ class gitist_reposClone(cs.Cmnd):
 gitlab-pub-gitist.pcs -i gitist_reposClone --destBaseDir=/tmp/gitistTest mohsen.byname-group
   #+end_src
 #+RESULTS:
+: cloning: mohsen.byname-group/mohsen.byname-project -> /tmp/gitistTest/mohsen.byname-group/mohsen.byname-project
+: [{'path': 'mohsen.byname-group/mohsen.byname-project', 'dest': '/tmp/gitistTest/mohsen.byname-group/mohsen.byname-project', 'status': 'cloned'}]
         #+end_org """)
 
         cmndArgs = self.cmndArgsGet("0&1", cmndArgsSpecDict, argsList)
@@ -361,26 +389,7 @@ gitlab-pub-gitist.pcs -i gitist_reposClone --destBaseDir=/tmp/gitistTest mohsen.
 
         baseDir = pathlib.Path(destBaseDir).expanduser()
 
-        results = []
-        for proj in groupProjects(groupPath):
-            dest = baseDir / proj.path_with_namespace
-            if dest.exists():
-                print(f"skipped (exists): {dest}")
-                results.append({"path": proj.path_with_namespace, "dest": str(dest), "status": "skipped"})
-                continue
-
-            url = cloneUrlForProject(proj)
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            print(f"cloning: {proj.path_with_namespace} -> {dest}")
-            completed = subprocess.run(
-                ["git", "clone", url, str(dest)],
-                capture_output=True, text=True,
-            )
-            if completed.returncode != 0:
-                log.error(f"clone failed for {proj.path_with_namespace}: {completed.stderr.strip()}")
-                results.append({"path": proj.path_with_namespace, "dest": str(dest), "status": "failed"})
-                continue
-            results.append({"path": proj.path_with_namespace, "dest": str(dest), "status": "cloned"})
+        results = [cloneProject(proj, baseDir) for proj in groupProjects(groupPath)]
 
         return cmndOutcome.set(
             opError=b.OpError.Success,
@@ -405,6 +414,80 @@ gitlab-pub-gitist.pcs -i gitist_reposClone --destBaseDir=/tmp/gitistTest mohsen.
             argDefault='',
             argChoices=[],
             argDescription="GroupPath"
+        )
+
+        return cmndArgsSpecDict
+
+
+####+BEGIN: b:py3:cs:cmnd/classHead :cmndName "gitist_clone" :comment "" :extent "verify" :ro "cli" :parsMand "destBaseDir" :parsOpt "" :argsMin 0 :argsMax 1 :pyInv ""
+""" #+begin_org
+*  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  CmndSvc-   [[elisp:(outline-show-subtree+toggle)][||]] <<gitist_clone>>  =verify= parsMand=destBaseDir argsMax=1 ro=cli   [[elisp:(org-cycle)][| ]]
+#+end_org """
+class gitist_clone(cs.Cmnd):
+    cmndParamsMandatory = [ 'destBaseDir', ]
+    cmndParamsOptional = [ ]
+    cmndArgsLen = {'Min': 0, 'Max': 1,}
+
+    @cs.track(fnLoc=True, fnEntry=True, fnExit=True)
+    def cmnd(self,
+             rtInv: cs.RtInvoker,
+             cmndOutcome: b.op.Outcome,
+             destBaseDir: typing.Optional[str]=None,  # Cs Mandatory Param
+             argsList: typing.Optional[list[str]]=None,  # CsArgs
+    ) -> b.op.Outcome:
+
+        failed = b_io.eh.badOutcome
+        callParamsDict = {'destBaseDir': destBaseDir, }
+        if self.invocationValidate(rtInv, cmndOutcome, callParamsDict, argsList).isProblematic():
+            return failed(cmndOutcome)
+        cmndArgsSpecDict = self.cmndArgsSpec()
+####+END:
+        self.cmndDocStr(f""" #+begin_org
+** [[elisp:(org-cycle)][| *CmndDesc:* | ]] Clone a single gitlab project (by full path) under destBaseDir (mirroring path_with_namespace; skip if exists).
+        #+end_org """)
+
+        self.captureRunStr(""" #+begin_org
+*** Run Results
+#+begin_src sh :results output :session shared
+gitlab-pub-gitist.pcs -i gitist_clone --destBaseDir=/tmp/gitistTest mohsen.byname-group/mohsen.byname-project
+  #+end_src
+#+RESULTS:
+: cloning: mohsen.byname-group/mohsen.byname-project -> /tmp/gitistTest/mohsen.byname-group/mohsen.byname-project
+: {'path': 'mohsen.byname-group/mohsen.byname-project', 'dest': '/tmp/gitistTest/mohsen.byname-group/mohsen.byname-project', 'status': 'cloned'}
+        #+end_org """)
+
+        cmndArgs = self.cmndArgsGet("0&1", cmndArgsSpecDict, argsList)
+        if not cmndArgs:
+            log.error("A gitlab project path argument is required.")
+            return failed(cmndOutcome)
+        projectPath = cmndArgs[0]
+
+        baseDir = pathlib.Path(destBaseDir).expanduser()
+        result = cloneProject(projectByPath(projectPath), baseDir)
+
+        return cmndOutcome.set(
+            opError=b.OpError.Success,
+            opResults=result,
+        )
+
+####+BEGIN: b:py3:cs:method/args :methodName "cmndArgsSpec" :methodType "anyOrNone" :retType "bool" :deco "default" :argsList "self"
+    """ #+begin_org
+**  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  Mtd-T-anyOrNone [[elisp:(outline-show-subtree+toggle)][||]] /cmndArgsSpec/ deco=default  deco=default  [[elisp:(org-cycle)][| ]]
+    #+end_org """
+    @cs.track(fnLoc=True, fnEntry=True, fnExit=True)
+    def cmndArgsSpec(self, ):
+####+END:
+        """
+***** Cmnd Args Specification
+"""
+        cmndArgsSpecDict = cs.CmndArgsSpecDict()
+
+        cmndArgsSpecDict.argsDictAdd(
+            argPosition="0&1",
+            argName="cmndArgs",
+            argDefault='',
+            argChoices=[],
+            argDescription="ProjectPath"
         )
 
         return cmndArgsSpecDict

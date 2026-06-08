@@ -32,6 +32,10 @@ csCmndsList = [
     csCmnd("gitist_reposClone",
            pars=collections.OrderedDict([("destBaseDir", "~/gitistClones")]),
            args="mohsen.byname-group", doContinue=True),
+    csCmnd("gitist_clone",
+           pars=collections.OrderedDict([("destBaseDir", "~/gitistClones")]),
+           args="mohsen.byname-group/mohsen.byname-project", doContinue=True),
+
 ]
 
 csCmndsList_seedInfo.setup(
