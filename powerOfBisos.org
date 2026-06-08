@@ -1,0 +1,473 @@
+#+title: The Power of ByStar/BISOS: Cumulative Components at the Intersection
+#+subtitle: PyCS, Seeding/Planting, and the cs.Cmnd as Both Command and Service
+#+author: Mohsen BANAN
+#+options: toc:4 num:t
+#+startup: showall
+
+* Abstract
+
+This paper argues a specific, defensible thesis about the *ByStar Digital
+Ecosystem* (=By*=) and its operating layer *BISOS* (ByStar Internet Services
+Operating System): that its power comes not from any single capability, but from
+the *intersection* of a small number of design commitments, realized as
+*cumulative* components on one shared substrate --- the *PyCS Command-Services
+Framework* --- inside one integrated environment, *Blee*.
+
+The competition in each individual domain --- configuration management, package
+inventory (SBOM), repository management, reproducible system composition,
+self-hosted services, CLI tooling, RPC services --- is mature and, crucially,
+*monolithic*: each incumbent owns one vertical. BISOS instead grows small,
+composable command-service units that share a substrate and therefore *add up*.
+The same definition that is a command-line tool is also a network service. The
+same plant that parameterizes one seed composes with the next. The marginal cost
+of the Nth capability is low because it reuses everything beneath it.
+
+We make the honest version of the claim: the *principle* of cumulative
+composability is not new (it is the Unix philosophy, and it is embodied by Nix,
+Guix, and Emacs). What is distinctive is the *synthesis* --- PyCS as a universal
+command-service abstraction, spanning operation, internet services, and the
+development/usage environment itself, on Debian, in service of an
+autonomy-and-privacy mission. We develop one technical centerpiece in depth: in
+PyCS a single =cs.Cmnd= is *simultaneously* a CLI command, a Python library
+call, and a remotely invocable service (over RPyC) --- collapsing a trichotomy
+that the rest of the industry builds with three separate tool stacks.
+
+* Table of Contents :TOC:
+- [[#abstract][Abstract]]
+- [[#1-the-thesis-intersection-and-accumulation][1. The Thesis: Intersection and Accumulation]]
+- [[#2-the-substrate-pycs-and-the-cscmnd][2. The Substrate: PyCS and the cs.Cmnd]]
+- [[#3-one-definition-three-faces-cli-library-and-service-via-rpyc][3. One Definition, Three Faces: CLI, Library, and Service (via RPyC)]]
+- [[#4-seeding-and-planting-behavior-as-named-parameterized-units][4. Seeding and Planting: Behavior as Named, Parameterized Units]]
+- [[#5-cumulative-components-composing-complete-subsystems][5. Cumulative Components: Composing Complete Subsystems]]
+- [[#6-blee-the-integrated-usagedevelopmentoperation-environment][6. Blee: The Integrated Usage/Development/Operation Environment]]
+- [[#7-bystar-the-mission-layer][7. ByStar: The Mission Layer]]
+- [[#8-competition-on-multiple-fronts][8. Competition on Multiple Fronts]]
+- [[#9-the-intersection-argument-stated-precisely][9. The Intersection Argument, Stated Precisely]]
+- [[#10-limitations-and-honest-trade-offs][10. Limitations and Honest Trade-offs]]
+- [[#11-conclusion][11. Conclusion]]
+
+* 1. The Thesis: Intersection and Accumulation
+
+The dominant pattern in systems software is the *monolith of competence*: a
+product that does one category extremely well and owns it end to end. Ansible
+owns configuration management. Terraform owns cloud provisioning. Syft owns SBOM
+generation. =ghorg= owns bulk repository cloning. gRPC owns service definitions.
+Each is excellent; each is also a silo with its own model, its own data formats,
+its own runtime, and its own boundary you cannot cross without leaving the tool.
+
+BISOS makes a different bet. Instead of one large product per vertical, it grows
+*many small components on one substrate*, such that:
+
+1. *Each component is cheap to add*, because it reuses the substrate's
+   invocation model, parameter system, targeting, remoting, examples, and
+   documentation machinery.
+2. *Components compose*, because they speak the same abstraction (the
+   command-service). Cloning a repo, installing a package, applying a config,
+   running a remote operation are all the *same kind of thing*.
+3. *The whole therefore competes on many fronts at once* --- not by out-building
+   each monolith, but by composing capabilities the monoliths cannot reach
+   across their own boundaries.
+
+This is the *cumulative* property. The *intersection* property is its companion:
+BISOS sits where several design commitments overlap --- a universal
+command-service substrate, an integrated Emacs-based environment (Blee), a
+Debian base, and the ByStar autonomy/privacy mission --- and its distinctiveness
+lives in that overlap rather than in any one axis.
+
+We will be candid throughout: the cumulative-composability principle is old and
+honorable (Section 8 names its true ancestors and rivals). The contribution is
+the *particular synthesis*, and one genuinely sharp technical lever, which we
+turn to first.
+
+* 2. The Substrate: PyCS and the cs.Cmnd
+
+PyCS (the Python Command-Services Framework, =bisos.b.cs=) is the substrate
+everything else accumulates on. Its atom is the *Command-Service* expressed as a
+class subclassing =cs.Cmnd=. A command declares its interface and implements its
+behavior:
+
+#+begin_src python
+class gitist_reposClone(cs.Cmnd):
+    cmndParamsMandatory = [ 'destBaseDir', ]
+    cmndParamsOptional  = [ ]
+    cmndArgsLen         = {'Min': 0, 'Max': 1,}
+
+    def cmnd(self,
+             rtInv: cs.RtInvoker,            # the runtime invoker (see Section 3)
+             cmndOutcome: b.op.Outcome,      # a structured result, not a print
+             destBaseDir: typing.Optional[str]=None,
+             argsList: typing.Optional[list[str]]=None,
+    ) -> b.op.Outcome:
+        ...
+        return cmndOutcome.set(opError=b.OpError.Success, opResults=results)
+#+end_src
+
+Three things in this small surface do disproportionate work:
+
+- *Declared interface.* Parameters (mandatory/optional), argument arity
+  (=cmndArgsLen=), and an argument specification (=cmndArgsSpec=) are *data*. The
+  framework can render a CLI parser, a help/usage menu, a remote-call signature,
+  and validation from the same declaration --- no per-face restatement.
+- *Structured outcome.* A command returns a =b.op.Outcome= (=opError=,
+  =opResults=), not stdout text. The result is a value, so it can be returned
+  over a wire, consumed by another command, or printed --- the command does not
+  decide which.
+- *The =RtInvoker= (=rtInv=).* Every command is handed a *runtime invoker* that
+  abstracts *how* it was called --- from a terminal, as a remote operation, or
+  programmatically. The body is written once against =rtInv=; the framework
+  supplies the right invoker per context. This is the hinge of Section 3.
+
+Around the atom, PyCS supplies the reusable machinery a tool would otherwise
+hand-roll: =g_csMain= (the dispatch/main), a *CSU list* (=csuList=) that imports
+and merges command-service units, a parameter dictionary
+(=commonParamsSpecify=), an examples/usage *player*, and the seeding hooks of
+Section 4. A new capability is a new =cs.Cmnd= added to a CSU --- and it inherits
+all of this for free. That "for free" is the engine of accumulation.
+
+* 3. One Definition, Three Faces: CLI, Library, and Service (via RPyC)
+
+Here is the lever that most sharply separates PyCS from the tools it is usually
+compared to. In the conventional world, three audiences require three artifacts:
+
+| Audience            | Conventional artifact                | Example stacks                  |
+|---------------------+--------------------------------------+---------------------------------|
+| The shell / human   | a CLI program                        | argparse, Click, Cobra, oclif   |
+| Another program     | a library / SDK                      | hand-written API surface        |
+| A remote caller     | a network service / RPC endpoint     | gRPC, FastAPI/OpenAPI, Thrift   |
+
+These are normally *three* implementations of the same intent, kept in sync by
+discipline. The CLI parses flags and prints; the library exposes functions; the
+service defines protobufs or an OpenAPI schema and a server. Drift between them
+is a perennial tax.
+
+In PyCS a single =cs.Cmnd= *is all three at once*:
+
+1. *CLI command.* =g_csMain= dispatches =-i <cmndName>= with parameters/arguments
+   parsed from the same declaration. =bin/gitlab-pub-gitist.pcs -i
+   gitist_reposClone --destBaseDir=/x someGroup= is the human face.
+2. *Library call.* The command is a Python object; =.pyCmnd(...)= invokes it
+   in-process with native arguments and returns the =Outcome=. One command can
+   call another directly --- composition without a subprocess.
+3. *Remote service.* Through *Remote Operations (RO)* carried over *RPyC* (a
+   transparent, symmetric Python RPC transport), the *same* command is invokable
+   across the network: parameters marshalled, the body executed on a performer,
+   the =Outcome= returned to the invoker. The author writes no server, no schema,
+   no client stub.
+
+The mechanism that makes one body serve all three is the =RtInvoker= and its
+constraints. The command body is written against =rtInv=; the framework binds
+the appropriate invoker --- local CLI, in-process, or remote --- at call time. A
+command can *declare* which faces it permits (e.g. =rtInvConstraints =
+cs.rtInvoker.RtInvoker.new_noRo()= marks a command as CLI-only, refusing remote
+invocation), so the duality is policy-controlled, not accidental.
+
+The consequence is profound for the cumulative thesis: *every capability added to
+BISOS is born simultaneously local and networked.* gitist's =reposClone= is a
+command you run; it is also, with no additional code, an operation a remote
+performer can be asked to carry out on a fleet. The CLI tool *is* the
+microservice *is* the SDK. Where competitors must choose a face --- =ghorg= is a
+CLI, a REST API is a service, a library is a library --- PyCS refuses the choice.
+This is the most concrete sense in which BISOS "competes on multiple fronts from
+one definition."
+
+* 4. Seeding and Planting: Behavior as Named, Parameterized Units
+
+The second multiplier is the *seed/plant* model, which turns *behavior* into a
+named, parameterized, composable unit --- the same way a function turns
+computation into a named, parameterized unit.
+
+- A *seed* (=bin/*-seed.cs=, or a packaged seed like =gitist.cs=) is a generic,
+  complete command-service executable: it provides =g_csMain=, the common
+  parameters, the examples player, and the remoting hooks --- but no domain
+  commitments of its own.
+- A *plant* (a =.pcs= file) is a thin script that imports a seed and supplies the
+  specifics: which brand, which config, which list of commands to run. At
+  interpreter exit it locates the seed on =$PATH= and *re-execs* as the seed,
+  injecting itself back as =plantedCsu=. The plant is the entry point you invoke;
+  the seed's engine is what actually runs, with the plant's specifics merged in.
+
+The everyday precedent is =setup.py=: a small file that parameterizes a generic
+build engine. PyCS generalizes and *names* this. Where =setup.py= is an unnamed,
+one-off plant, BISOS plants are named, reusable, and parameterized --- closer to
+*calling a function* than to *writing a config file*. The =csCmndsList= seed, for
+instance, lets a plant declare a *list* of command-services to run (each with its
+parameters, arguments, and continue-on-error policy), optionally against multiple
+targets or clusters:
+
+#+begin_src python
+csCmndsList = [
+    csCmnd("gitist_reposList",  args="bisos-pip", doContinue=True),
+    csCmnd("gitist_reposClone", pars=od([("destBaseDir","~/clones")]),
+           args="bisos-pip", doContinue=True),
+    csCmnd("gitist_clone",      pars=od([("destBaseDir","~/clones")]),
+           args="bisos-pip/gitist", doContinue=True),
+]
+#+end_src
+
+This is *configuration as a small program* --- data that is also executable,
+expressed in the host language, validated by the host language, and (because it
+is command-services) runnable locally *or* remotely. It is the BISOS answer to
+the YAML playbook and the Nix expression, with the distinguishing property that
+its units are the very same =cs.Cmnd= atoms used everywhere else.
+
+* 5. Cumulative Components: Composing Complete Subsystems
+
+With the atom (=cs.Cmnd=), its three faces (Section 3), and the seed/plant
+composition mechanism (Section 4), capabilities accumulate. Each new BISOS
+package is a CSU full of commands that immediately gain CLI + library + remote
+faces and immediately compose into plants.
+
+Consider two real components:
+
+- *bisos.gitist* --- mass git operations across GitLab and GitHub: list a
+  group/org's repositories, clone one repo, clone an entire group/org tree (with
+  an access-policy model spanning anonymous, SSH, SSH-over-HTTPS, and
+  token-authenticated HTTPS). Repos become first-class, declaratively.
+- *bisos.sbom* --- the software bill of materials: the inventory of packages
+  that constitute a (sub)system.
+
+Separately, each has near-equivalents in the wild (Section 8). *Together, under
+one substrate, they cross a boundary the near-equivalents cannot.* A single
+plant can declare a *complete subsystem* as a list of command-services:
+
+#+begin_example
+  - the packages it requires            (bisos.sbom)
+  - the repositories it is built from    (bisos.gitist)
+  - the configuration it applies         (config command-services)
+  - the execution that brings it up      (command-services run on targets)
+#+end_example
+
+That plant is a named, parameterized, executable description of a subsystem ---
+*and every line of it is the same kind of object*, runnable on this host or, via
+RO/RPyC, across a fleet. The cumulative property is not rhetorical: each added
+package widens what a plant can compose, and because the units are uniform, the
+combinations multiply rather than merely add. =ghorg= cannot install your
+packages; Syft cannot clone your repos; Ansible can do both but in *its* model,
+not as composable command-services that are simultaneously your CLI and your
+remote API. BISOS composes them as one substance.
+
+* 6. Blee: The Integrated Usage/Development/Operation Environment
+
+A substrate that unifies invocation still leaves a gap most ecosystems never
+close: the gap between *using* a system, *developing* it, and *operating* it.
+Blee (the BISOS Libre-Halaal Emacs Environment) closes it.
+
+- Command-services document themselves in *Blee-Panels* --- org-mode documents
+  that are themselves file-tree objects, holding runnable examples that invoke
+  the very =bin/= executables they describe, and cross-referencing the source
+  that implements them.
+- Source is authored in *COMEEGA* (org-mode interleaved with code via dynamic
+  blocks), so the same artifact is literate documentation and executable program.
+- Because commands carry structured =Outcome=, examples, and usage menus, the act
+  of *learning* a capability, *invoking* it, *scripting* it, and *operating* it
+  remotely are continuous --- one environment, one abstraction.
+
+This is the axis Nix and Ansible deliberately do not occupy: they are runtimes,
+not integrated usage/development environments. Emacs *is* such an environment but
+is not an OS/services substrate. Blee fuses the two, which is precisely why the
+*intersection* (Section 9) is where BISOS lives.
+
+* 7. ByStar: The Mission Layer
+
+BISOS is the operating layer; *ByStar* is the mission. By* is an
+"interdisciplinary, ethics-oriented, non-proprietary digital ecosystem" whose
+purpose is *Internet Application Services that preserve the autonomy and privacy
+of the individual*, operating alongside --- and in challenge to --- the
+proprietary American digital ecosystems.
+
+This reframes the competition. The monolith ByStar ultimately opposes is not
+Ansible or Nix; it is the *proprietary digital ecosystem* (the Google/Apple
+model) in which the individual rents capability and surrenders autonomy and data.
+Seen this way, the cumulative/intersection architecture is not merely a technical
+preference --- it is the mission's instrument. Autonomy requires that the
+individual can *own and compose* their capabilities rather than consume a vendor
+monolith; a substrate of composable, self-hostable, locally-and-remotely
+invocable command-services is what makes such ownership tractable.
+
+* 8. Competition on Multiple Fronts
+
+Honesty strengthens the argument. On each front there is a strong, often
+superior, incumbent. The BISOS claim is never "we beat each monolith at its
+specialty," but "we reach across all of them from one composable substrate, and
+we occupy an intersection none of them do."
+
+** 8.1 CLI frameworks --- argparse, Click, Cobra, oclif
+
+These build excellent command-line programs and nothing else. PyCS produces a
+CLI *as one of three faces* of a =cs.Cmnd=. Front result: parity-to-modest on raw
+CLI ergonomics; decisive on the fact that the same definition is also a library
+and a service.
+
+** 8.2 Service / RPC frameworks --- gRPC, FastAPI/OpenAPI, Thrift
+
+These define network services from schemas (protobuf, OpenAPI) plus generated
+stubs and a server you write. PyCS exposes the *same* =cs.Cmnd= remotely over
+RPyC with no schema, stub, or server authored. Trade: gRPC/OpenAPI win on
+cross-language interop, ecosystem, and wire-protocol maturity (RPyC is
+Python-to-Python); PyCS wins on *zero marginal cost* --- the service already
+exists the moment the command does.
+
+** 8.3 Configuration management --- Ansible, Salt, Chef, Puppet, CFEngine
+
+The closest functional rivals for "compose a subsystem (packages + repos +
+config + execution) against many targets." Ansible especially is mature,
+agentless, and vast in module coverage; Salt's states-plus-remote-execution is
+architecturally the nearest cousin to "csCmndsList against targets/clusters."
+They win on adoption, module breadth, docs, and battle-testing. BISOS's
+differentiator is substrate identity: in PyCS the unit of configuration is the
+*same* command-service that is also your CLI and your RPC --- not a YAML task
+interpreted by a separate engine.
+
+** 8.4 Reproducible system composition --- Nix / NixOS / flakes, Guix
+
+The strongest conceptual competitor, and the true counterexample to any naive
+"only we are cumulative" claim. Nix is *itself* a composable substrate:
+derivations and one language compose packages, configurations, dev environments,
+and whole systems; flake inputs pin git repositories. Guix is the GNU,
+Scheme-based, libre-aligned equivalent --- philosophically close to ByStar. They
+win decisively on *reproducibility* and a vast cumulative package set. BISOS does
+not (yet) offer Nix-grade reproducibility. What BISOS adds over Nix is the
+*command-service* dimension (local=remote invocation, the operate face) and the
+integrated Blee environment; Nix composes *what a system is*, BISOS also composes
+*how you operate and use it*.
+
+** 8.5 Repository / workspace composition --- ghorg, gitlabber, Google repo, vcstool, west
+
+=ghorg= (multi-provider bulk clone) and =gitlabber= (GitLab group-tree clone) are
+mature point tools; manifest tools (Google =repo=, =vcstool=, =west=) assemble
+workspaces from a YAML/XML list. They win on focus and features within cloning.
+BISOS's gitist is not trying to out-feature =ghorg=; its point is that cloning is
+a *command-service* that composes with package and config command-services in one
+plant --- something no repo tool reaches.
+
+** 8.6 SBOM / inventory --- Syft, Grype, CycloneDX, SPDX, Tern, OSV
+
+These are *descriptive*: enumerate what exists, match vulnerabilities, emit a
+standard document. They win on standards conformance and the security tooling
+pipeline. bisos.sbom, composed with gitist and execution command-services, points
+toward the *prescriptive* use --- an inventory that participates in *assembling* a
+subsystem, not merely describing one. Different intent; minimal head-to-head.
+
+** 8.7 Self-hosted service platforms --- YunoHost, Sandstorm, Cloudron
+
+The nearest rivals on ByStar's *services-for-autonomy* goal: bundle many
+self-hosted internet services with unified management, often on Debian. They win
+on turnkey app catalogs and polished admin UX. They do not offer a uniform
+command-service substrate, the CLI/library/RPC trinity, or an integrated
+development environment --- they manage apps; BISOS provides a substrate to build
+and operate them.
+
+** 8.8 Integrated environments --- GNU Emacs, VS Code
+
+Emacs is the proof that cumulative packages on one substrate become a
+super-environment; Blee builds on exactly this. VS Code is the proprietary-leaning
+mass-market counterpart. They win on editor maturity and user base. Neither is an
+OS/services substrate; Blee extends the Emacs model down into operation and
+services, which is the fusion Section 6 describes.
+
+** 8.9 Infrastructure as code --- Terraform/OpenTofu, Pulumi
+
+Declarative provisioning of (mostly cloud) infrastructure. Pulumi shares the
+"configuration in a real language" instinct with PyCS plants. They win on cloud
+provider coverage and state management. They operate above the host, not at the
+command-service granularity, and are not invocation-substrates.
+
+** 8.10 The ultimate front --- the proprietary digital ecosystem
+
+Per Section 7, the strategic competitor is the Google/Apple ecosystem model. Here
+the comparison is not feature-by-feature but values-and-ownership: rented,
+surveilled, monolithic convenience versus owned, private, composable autonomy.
+This is the front on which the cumulative/intersection architecture is not just a
+technique but the thesis.
+
+#+begin_example
+Front                         Strong incumbent(s)        BISOS posture
+----------------------------- -------------------------- --------------------------------
+CLI tooling                   Click, Cobra               one of three faces, free
+Service/RPC                   gRPC, FastAPI/OpenAPI       same def, remote via RPyC, free
+Config management             Ansible, Salt              uniform substrate, not YAML tasks
+Reproducible composition      Nix, Guix                  adds operate-face + Blee; less repro
+Repo/workspace                ghorg, gitlabber, repo     cloning composes with all else
+SBOM/inventory                Syft, CycloneDX, SPDX       prescriptive composition, not just descriptive
+Self-hosted services          YunoHost, Sandstorm        substrate to build, not an app catalog
+Integrated environment        Emacs, VS Code             extended down into OS/services
+IaC                           Terraform, Pulumi          command-service granularity
+Digital ecosystem (strategic) Google/Apple               owned/private/composable autonomy
+#+end_example
+
+* 9. The Intersection Argument, Stated Precisely
+
+No single axis below is unique to BISOS. The claim is that their *conjunction*
+has no other occupant:
+
+1. A *universal command-service substrate* (=cs.Cmnd=) in which the unit of
+   tooling, configuration, and service is the same object.
+2. That object's *three-faced* identity: CLI = library = remote service (RPyC),
+   from one definition, policy-controlled by =RtInvoker= constraints.
+3. *Seed/plant* composition that makes behavior a named, parameterized,
+   executable unit --- configuration as a small program of command-services.
+4. *Cumulative* packages (gitist, sbom, ...) that, sharing the substrate, compose
+   into complete subsystems (packages + repos + config + execution).
+5. An *integrated Emacs environment* (Blee, COMEEGA, Panels) unifying use,
+   development, and operation.
+6. A *Debian* base and a *libre-Halaal autonomy/privacy mission* (ByStar) that
+   makes the architecture an instrument of individual sovereignty.
+
+Each of {1..6} has a powerful incumbent: Unix/Click for (1)/CLI, gRPC for (2),
+Ansible/Salt for (3), Nix/Guix for (3)/(4)-as-composition, Emacs for (5),
+YunoHost and the proprietary ecosystems for (6). The defensible assertion is:
+*the intersection of all six, with command-service as the connective tissue, is
+unique.* Uniqueness lives in the synthesis, not in any clause.
+
+* 10. Limitations and Honest Trade-offs
+
+A credible paper names the costs.
+
+- *Adoption and network effects.* Nix has tens of thousands of contributors and a
+  binary cache; Ansible has Galaxy; gRPC has cross-language ubiquity. BISOS's
+  cumulative components are coherent but comparatively small in ecosystem and
+  community. Composability does not, by itself, defeat network effects.
+- *Reproducibility.* Nix/Guix offer guarantees BISOS has not built. Composing
+  subsystems is not yet the same as *reproducibly* composing them.
+- *RPyC's reach.* The CLI/service unification is Python-to-Python. For
+  polyglot/interop service meshes, gRPC/OpenAPI remain the lingua franca; PyCS's
+  "free service" face is most powerful *within* a Python/BISOS world.
+- *Integration burden and learning curve.* The very coherence that makes BISOS
+  powerful (Emacs/Blee, COMEEGA, the seed/plant mechanics) is a steep on-ramp
+  relative to "install a CLI." The cumulative model trades turnkey familiarity
+  for compositional depth.
+- *Maturity surface.* Many monoliths have a decade of edge-case hardening per
+  vertical that a broad, cumulative ecosystem accrues more slowly.
+
+These are not refutations of the thesis; they are the price of it. The cumulative
+approach wins on *coherence, ownership, and cross-front composition* and pays in
+*maturity, network effects, and ramp*.
+
+* 11. Conclusion
+
+The power of ByStar/BISOS is not a feature; it is a *shape*. By making the
+command-service the universal atom --- one definition that is at once a CLI, a
+library, and a remote service over RPyC --- and by composing those atoms through
+named, parameterized seeds and plants inside an integrated Emacs environment, on
+Debian, in service of individual autonomy, BISOS occupies an intersection that no
+single incumbent does.
+
+The components are cumulative: each new package (gitist, sbom, and their
+successors) widens what a plant can compose, and because every unit is the same
+kind of object, capabilities multiply. That is what lets a small, libre ecosystem
+*compete on many fronts at once* --- not by out-building each monolith on its own
+ground, but by reaching across grounds the monoliths cannot, from a single
+substrate.
+
+The sharp, honest claim is therefore this: the *principle* of cumulative
+composability is the Unix-Nix-Emacs inheritance, not a BISOS invention; but the
+*synthesis* --- command-service as connective tissue across operation, services,
+and the development/usage environment, bent toward autonomy --- is, to the best of
+this survey's knowledge, without another occupant. BISOS is a super-OS in the
+sense that NixOS and Emacs are: an integrated, composable whole that is more than
+the sum of its small, cumulative parts --- and it is the only one of those that
+makes "the command you run" and "the service you offer" the very same thing.
+
+# Local Variables:
+# eval: (setq-local toc-org-max-depth 4)
+# End:
