@@ -1,0 +1,215 @@
+#+title: bisos.gitist --- Development Status & Continuation Handoff
+
+This file is a working-state handoff so development can continue on another
+machine (which has this repo but NOT the developer's =~=). It captures the
+architecture, what works, what is untested, the config/venv setup that lives
+OUTSIDE the repo, and the design decisions made so far.
+
+Companion docs: [[file:AI-AGENTS.org][AI-AGENTS.org]] (agent guidance / layering), [[file:README.org][README.org]] (overview).
+
+* What gitist is
+
+=bisos.gitist= does git *mass-cloning* for two brands --- *gitlab* and *github*
+(public, and private/enterprise via auth). It is a PyCS *seed/plant* tool built
+on =bisos.csSeed='s =csCmndsList=. The brand-neutral commands marry the
+=python-gitlab= and =PyGithub= libraries to the PyCS framework.
+
+Layering: PyCS-Framework (=bisos.b.cs=) -> seeded/planted (=gitist.cs=) ->
+=csCmndsList= (csSeed) -> gitist commands (=gitist_csu.py=).
+
+* Repo map (the files that matter)
+
+| File | Role |
+|------+------|
+| =py3/bin/gitist.cs= | the seed executable; csuList = csxuFps_csu, gitist_csu, csCmndsList_csu, plantedCsu |
+| =py3/bin/gitlab-pub-gitist.pcs= | gitlab plant (brand=Gitlab, cfg path/tag, access policy, declares the 3 csCmnds) |
+| =py3/bin/github-pub-gitist.pcs= | github plant (brand=Github, ...) |
+| =py3/bisos/gitist/gitist_csu.py= | ALL the commands + the brand adapter layer |
+| =py3/bisos/gitist/gitist_seedInfo.py= | =CmndsControlInfo= dataclass (singleton =cmndsControlInfo=) + enums |
+| =py3/bisos/gitist/gitist_seed.py= | atexit shim -> =seedsLib.plantWithWhich('gitist.cs')= (no logic of its own) |
+| =py3/config/gitlabHosts.cfg= | TEMPLATE (no secrets) --- python-gitlab native format |
+| =py3/config/githubHosts.cfg= | TEMPLATE (no secrets) --- gitist's own INI format |
+
+* Architecture: the brand-neutral adapter design
+
+The three commands are brand-agnostic. All brand-specific code lives in a thin
+adapter layer in =gitist_csu.py=. Adding a brand = implementing that layer; the
+commands do not change. This was a deliberate choice (generalize, don't
+duplicate).
+
+Brand-neutral record:
+- =RepoRef= dataclass: =namespacePath= (on-disk relative path), =httpUrl=,
+  =sshUrl=, =private=, =ident=.
+
+Brand-dispatched functions (dispatch on =cmndsControlInfo.brand= via =_brand()=):
+- =getGitlab()= -> python-gitlab client via =Gitlab.from_config(tag, [path])=.
+- =getGithub()= -> PyGithub client; =_githubCfg()= reads =(url, token)= from the
+  cfg with =configparser=, honoring =[global] default= when tag is unset.
+- =listRepos(namePath)= -> [RepoRef]. gitlab: =groups.get(path).projects.list(get_all=True)=.
+  github: try =get_organization(name)=, except =github.GithubException= fall back to =get_user(name)=, then =.get_repos()=.
+- =getRepo(repoPath)= -> RepoRef. gitlab =projects.get=, github =get_repo=.
+- =authToken()= -> token for current brand (gitlab: client.private_token; github: cfg token).
+- =_httpsCredPrefix(token)= -> https userinfo: gitlab =oauth2:<token>@=, github =<token>@=.
+- =_gitlabProjectToRef= / =_githubRepoToRef= -> map provider object to RepoRef.
+
+Brand-neutral helpers (operate only on RepoRef):
+- =cloneUrlForRef(ref)= -> picks the clone URL per access policy (see below).
+- =cloneRef(ref, baseDir)= -> skip-if-exists, else =git clone= via =subprocess.run=;
+  returns ={path, dest, status}= where status in {cloned, skipped, failed}.
+
+* The three commands (in gitist_csu.py)
+
+All take the group/org as a positional arg; clone commands take a mandatory
+=destBaseDir= CS param (registered in =commonParamsSpecify()=; plant supplies a
+default via the csCmnd =pars= dict; =--destBaseDir=...= overrides on CLI).
+
+- =gitist_reposList <group|org>= --- list repos. Prints "=id path=" per repo;
+  opResults = list of ={id, path}=.
+- =gitist_reposClone --destBaseDir=DIR <group|org>= --- clone every repo of the
+  group/org under DIR, mirroring =namespacePath=; skip-if-exists.
+- =gitist_clone --destBaseDir=DIR <owner/repo>= --- clone a single repo.
+
+On-disk layout: each repo lands at =destBaseDir/<namespacePath>= (gitlab
+=path_with_namespace=, e.g. =group/subgroup/proj=; github =full_name=, e.g.
+=owner/repo=). This is collision-free and faithful to the provider hierarchy.
+
+* Clone-URL selection (cloneUrlForRef) --- the access policy
+
+Driven by =cmndsControlInfo=:
+- =gitAccessType == Anon= -> =ref.httpUrl= (public https, no creds).
+- =gitAccessType == Auth= and =gitAuthAccessMethod in (Ssh, SshOverHttps)= ->
+  =ref.sshUrl=; if =gitAccessAcct= set, the host is replaced with that
+  =~/.ssh/config= =Host= alias: =git@<gitAccessAcct>:<path>=. (ssh and
+  sshOverHttps share this code path; sshOverHttps differs only in the user's
+  ssh config --- port 443 etc.)
+- =gitAccessType == Auth= and =gitAuthAccessMethod == Https= -> =ref.httpUrl=
+  with token injected: =https://<credPrefix><host>/...=.
+
+* Config files --- IMPORTANT for a fresh machine (no ~)
+
+Two layers:
+1. *Templates in the repo* (=py3/config/{gitlab,github}Hosts.cfg=) --- no
+   secrets, placeholders only. Both use =[global] default = default= plus one
+   =[<tag>]= section per account; the plant selects with =serverConfigTag=.
+2. *Real runtime files in $HOME* (=~/gitlabHosts.cfg=, =~/githubHosts.cfg=) ---
+   hold real Personal Access Tokens; NEVER committed. The plants'
+   =serverConfigPath= points here (note: PLURAL "Hosts").
+
+On the new machine you MUST recreate the runtime files (they are not in the repo):
+#+begin_src bash
+cp py3/config/gitlabHosts.cfg ~/gitlabHosts.cfg && chmod 600 ~/gitlabHosts.cfg
+cp py3/config/githubHosts.cfg ~/githubHosts.cfg && chmod 600 ~/githubHosts.cfg
+# then edit each: paste a real PAT into the [default] (or your chosen) section.
+#+end_src
+
+Keys --- gitlab (python-gitlab native): =url=, =private_token=, =api_version=
+(+ =[global] ssl_verify=, =timeout=). github (our reader): =url= (omit /
+=https://api.github.com= for public; =https://HOST/api/v3= for Enterprise),
+=token= (empty => anonymous public access).
+
+A gitlab PAT needs scope =read_api= (listing) and repo read for private clone.
+A github PAT needs =repo= read for private; none needed for public (just raises
+rate limits). For public-only testing, leave =token= empty and =gitAccessType =
+Anon= in the plant.
+
+* Environment / venv --- IMPORTANT
+
+The =bin/*.pcs= / =*.cs= run under =python= on PATH, which is
+=/bisos/venv/py3/dev-bisos3/bin/python=. That is where =bisos.gitist= is
+editable-installed and where =gitlab= (python-gitlab) and =github= (PyGithub)
+live. (CLAUDE.md cites =/bisos/venv/py3/bisos3= for lint/mypy --- that is NOT the
+runtime interpreter.)
+
+Dependencies: =python-gitlab= and =PyGithub=. If PyGithub is missing on the new
+machine:
+#+begin_src bash
+/bisos/venv/py3/dev-bisos3/bin/pip install PyGithub
+python -c "from github import Github, Auth; print('ok')"   # verify under runtime python
+#+end_src
+TODO: confirm =PyGithub= is in =setup.py= =install_requires= on the next build
+(the code imports =github=).
+
+* How to run / test (no unit-test framework)
+
+From =py3/=:
+#+begin_src bash
+bin/gitlab-pub-gitist.pcs                                            # example menu
+bin/gitlab-pub-gitist.pcs -i gitist_reposList mohsen.byname-group
+bin/gitlab-pub-gitist.pcs -i gitist_clone --destBaseDir=/tmp/x mohsen.byname-group/mohsen.byname-project
+bin/github-pub-gitist.pcs -i gitist_reposList bisos-pip
+bin/github-pub-gitist.pcs -i gitist_clone --destBaseDir=/tmp/x bisos-pip/gitist
+# csCmndsRun runs the plant's declared list:
+bin/gitlab-pub-gitist.pcs -i csCmndsRun all
+#+end_src
+Verification = run and compare to the =captureRunStr(...)= blocks inside each
+command. Syntax-only check:
+=python -c "import ast; ast.parse(open('bisos/gitist/gitist_csu.py').read())"=.
+
+* Status --- what works vs. what is untested
+
+Verified end-to-end (run for real):
+- gitlab: =reposList=, =clone=, =reposClone= --- Anon (public) path. (Tester's own
+  repo was made public to exercise Anon clone.)
+- github: =reposList=, =clone= --- Anon path on public org =bisos-pip=.
+
+Wired but NOT runtime-tested:
+- *Auth path on either brand* (ssh, sshOverHttps, https-token). Logic is shared
+  and mirrors the verified Anon path, but needs a real PAT (=~/...Hosts.cfg=) or
+  ssh key + =~/.ssh/config= Host alias to exercise. *This is the natural next
+  test.*
+- github =reposClone= was not mass-run (it = =listRepos= [verified] + =cloneRef=
+  per repo [verified via =gitist_clone=]).
+
+* Open items / TODO
+
+- Runtime-test the Auth path (ssh and/or https-token), both brands.
+- Confirm =PyGithub= lands in =setup.py= =install_requires=.
+- Consider a =.gitignore= guard so a filled-in =~/...Hosts.cfg= (or any copy with
+  a real token) can never be committed. (Real tokens currently live only in
+  $HOME, outside the repo.)
+- =reposClone= returns =opError=Success= even if some clones fail (partial-failure
+  tolerated; failures visible in =results[].status=). Revisit if you want
+  any-failure => failure.
+- github =reposClone= default arg in the plant is =bisos-pip= (~69 repos) --- a
+  heavy default for =csCmndsRun all=. Consider a smaller default target.
+- Security note: an earlier real gitlab PAT was briefly placed in
+  =py3/config/gitlabHosts.cfg= and redacted BEFORE any commit (so it is NOT in
+  git history / not pushed). Rotating it is optional hygiene.
+
+* Design decisions (the "why")
+
+- *Generalize, don't duplicate*: one set of commands + a brand adapter (RepoRef),
+  rather than gitlab_*/github_* twins.
+- *Idempotency = skip-if-exists* (no pull, no error) when =destBaseDir/<ns>=
+  already exists.
+- *Layout = mirror namespace* (=path_with_namespace= / =full_name=) under
+  =destBaseDir=.
+- *destBaseDir is a CS param* (overridable per-invocation, menu-visible), not a
+  =CmndsControlInfo= field; the plant supplies a default via the csCmnd =pars=.
+- *github account resolution = org-then-user* fallback.
+- *Config*: gitlab uses python-gitlab's =from_config= (its native cfg format);
+  github uses gitist's own =configparser= reader. Both honor =[global] default=.
+- *Access model on cmndsControlInfo*: =gitAccessType= (Anon/Auth) x
+  =gitAuthAccessMethod= (Ssh/Https/SshOverHttps) + =gitAccessAcct= (ssh Host
+  alias). Set by the plant.
+
+* COMEEGA / dblock editing caveat
+
+Source is COMEEGA: edit ONLY after =####+END:= markers; the dblock headers
+(class/func signatures, imports, csInfo) are Emacs/Blee-generated and will be
+overwritten on regeneration. The two access enums (=GitAccessType=,
+=GitAuthAccessMethod=) were added as plain Python; they can be regenerated as
+=bx:dblock:python:enum= blocks in Blee if desired.
+
+* Commit history (origin/main, all pushed)
+
+| 192e32c | Added the config templates. |
+| a0232c1 | Claude added github support as well. Not tested yet. |
+| b20ee4d | Added cloning for one repo. |
+| ebfb495 | gitist: gitlab repo listing and cloning slice |
+| 15f0d64 | A starting point to be continued with Claude. |
+| 6a53570 | Initial commit |
+
+# Local Variables:
+# eval: (setq-local toc-org-max-depth 4)
+# End:

@@ -12,6 +12,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 * What this is
 
+*Continuing development?* See [[file:gitist-devStatus.org][gitist-devStatus.org]] for the current working state:
+what is implemented and verified, the brand-adapter design, the config/venv
+setup that lives OUTSIDE the repo (=~/...Hosts.cfg=, the =dev-bisos3= venv,
+PyGithub), open items, and design decisions.
+
 bisos.gitist is a Python package, part of BISOS (ByStar Internet Services
 Operating System), built on the [[https://github.com/bisos-pip/pycs][PyCS-Framework]]
 (=bisos.b.cs=).
