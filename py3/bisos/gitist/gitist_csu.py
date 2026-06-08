@@ -97,8 +97,12 @@ import collections
 import pathlib
 import enum
 import subprocess
+import configparser
+from dataclasses import dataclass
 
 import gitlab
+import github
+from github import Github, Auth
 
 from bisos.gitist import gitist_seedInfo
 
@@ -210,60 +214,149 @@ def getGitlab(
     return gl
 
 
-def groupProjects(groupPath: str):
-    """ List the projects under a gitlab group or group/subgroup path. """
-    gl = getGitlab()
-    group = gl.groups.get(groupPath)
-    return group.projects.list(get_all=True)
+def _githubCfg():
+    """ Read (url, token) from the github cfg INI at serverConfigPath[serverConfigTag]. """
+    ci = gitist_seedInfo.cmndsControlInfo
+    cfgPath = pathlib.Path(ci.serverConfigPath).expanduser()
+    parser = configparser.ConfigParser()
+    parser.read(str(cfgPath))
+    tag = ci.serverConfigTag or "default"
+    section = parser[tag] if parser.has_section(tag) else {}
+    url = section.get("url") or None          # absent => public github.com
+    token = section.get("token") or None
+    return url, token
 
 
-def cloneUrlForProject(proj) -> str:
-    """ Choose the clone URL per cmndsControlInfo access policy. """
+def getGithub() -> Github:
+    """ Build a PyGithub client from cmndsControlInfo (serverConfigTag, serverConfigPath). """
+    url, token = _githubCfg()
+    kwargs = {}
+    if url:
+        kwargs["base_url"] = url
+    if token:
+        kwargs["auth"] = Auth.Token(token)
+    return Github(**kwargs)
+
+
+@dataclass
+class RepoRef:
+    """ Brand-neutral repo descriptor used by all gitist commands. """
+    namespacePath: str          # on-disk relative path (gitlab path_with_namespace / github full_name)
+    httpUrl: str
+    sshUrl: str
+    private: bool = False
+    ident: object = None        # provider id (gitlab project id / github repo id)
+
+
+def _brand():
+    return gitist_seedInfo.cmndsControlInfo.brand
+
+
+def _gitlabProjectToRef(proj) -> RepoRef:
+    return RepoRef(
+        namespacePath=proj.path_with_namespace,
+        httpUrl=proj.http_url_to_repo,
+        sshUrl=proj.ssh_url_to_repo,
+        private=(proj.visibility != "public"),
+        ident=proj.id,
+    )
+
+
+def _githubRepoToRef(repo) -> RepoRef:
+    return RepoRef(
+        namespacePath=repo.full_name,
+        httpUrl=repo.clone_url,
+        sshUrl=repo.ssh_url,
+        private=repo.private,
+        ident=repo.id,
+    )
+
+
+def listRepos(namePath: str) -> list:
+    """ List repos under an account path -> [RepoRef]. Brand-dispatched. """
+    brand = _brand()
+    if brand == gitist_seedInfo.GitProviderBrand.Gitlab:
+        group = getGitlab().groups.get(namePath)
+        return [_gitlabProjectToRef(p) for p in group.projects.list(get_all=True)]
+    if brand == gitist_seedInfo.GitProviderBrand.Github:
+        gh = getGithub()
+        try:
+            owner = gh.get_organization(namePath)      # try org first
+        except github.GithubException:
+            owner = gh.get_user(namePath)              # fall back to user
+        return [_githubRepoToRef(r) for r in owner.get_repos()]
+    raise NotImplementedError(f"listRepos not implemented for brand {brand}")
+
+
+def getRepo(repoPath: str) -> RepoRef:
+    """ Resolve a single repo by full path -> RepoRef. Brand-dispatched. """
+    brand = _brand()
+    if brand == gitist_seedInfo.GitProviderBrand.Gitlab:
+        return _gitlabProjectToRef(getGitlab().projects.get(repoPath))
+    if brand == gitist_seedInfo.GitProviderBrand.Github:
+        return _githubRepoToRef(getGithub().get_repo(repoPath))
+    raise NotImplementedError(f"getRepo not implemented for brand {brand}")
+
+
+def authToken():
+    """ The access token for the current brand (for https-auth clone URLs). """
+    brand = _brand()
+    if brand == gitist_seedInfo.GitProviderBrand.Gitlab:
+        return getGitlab().private_token
+    if brand == gitist_seedInfo.GitProviderBrand.Github:
+        return _githubCfg()[1]
+    raise NotImplementedError(f"authToken not implemented for brand {brand}")
+
+
+def _httpsCredPrefix(token) -> str:
+    """ Userinfo to inject into an https clone URL, per brand. """
+    brand = _brand()
+    if brand == gitist_seedInfo.GitProviderBrand.Gitlab:
+        return f"oauth2:{token}@"
+    if brand == gitist_seedInfo.GitProviderBrand.Github:
+        return f"{token}@"
+    raise NotImplementedError(f"_httpsCredPrefix not implemented for brand {brand}")
+
+
+def cloneUrlForRef(ref: RepoRef) -> str:
+    """ Choose the clone URL for a RepoRef per cmndsControlInfo access policy. """
     ci = gitist_seedInfo.cmndsControlInfo
     GAT = gitist_seedInfo.GitAccessType
     GAM = gitist_seedInfo.GitAuthAccessMethod
 
     if ci.gitAccessType == GAT.Auth:
         if ci.gitAuthAccessMethod in (GAM.Ssh, GAM.SshOverHttps):
-            sshUrl = proj.ssh_url_to_repo                       # git@HOST:ns/proj.git
-            if ci.gitAccessAcct:
-                pathPart = sshUrl.partition('@')[2].partition(':')[2]
-                return f"git@{ci.gitAccessAcct}:{pathPart}"     # host -> ~/.ssh/config alias
-            return sshUrl
+            if ci.gitAccessAcct:                                # host -> ~/.ssh/config alias
+                pathPart = ref.sshUrl.partition('@')[2].partition(':')[2]
+                return f"git@{ci.gitAccessAcct}:{pathPart}"
+            return ref.sshUrl
         if ci.gitAuthAccessMethod == GAM.Https:
-            httpUrl = proj.http_url_to_repo                     # https://HOST/ns/proj.git
-            token = getGitlab().private_token
-            if token and httpUrl.startswith("https://"):
-                return httpUrl.replace("https://", f"https://oauth2:{token}@", 1)
-            return httpUrl
+            token = authToken()
+            if token and ref.httpUrl.startswith("https://"):
+                return ref.httpUrl.replace("https://", f"https://{_httpsCredPrefix(token)}", 1)
+            return ref.httpUrl
 
-    return proj.http_url_to_repo                                # anon => public https
-
-
-def projectByPath(projectPath: str):
-    """ Resolve a single gitlab project by its full namespaced path (group/.../project). """
-    gl = getGitlab()
-    return gl.projects.get(projectPath)
+    return ref.httpUrl                                          # anon => public https
 
 
-def cloneProject(proj, baseDir: pathlib.Path) -> dict:
-    """ Clone one project under baseDir/path_with_namespace; skip if it already exists. """
-    dest = baseDir / proj.path_with_namespace
+def cloneRef(ref: RepoRef, baseDir: pathlib.Path) -> dict:
+    """ Clone one repo under baseDir/namespacePath; skip if it already exists. """
+    dest = baseDir / ref.namespacePath
     if dest.exists():
         print(f"skipped (exists): {dest}")
-        return {"path": proj.path_with_namespace, "dest": str(dest), "status": "skipped"}
+        return {"path": ref.namespacePath, "dest": str(dest), "status": "skipped"}
 
-    url = cloneUrlForProject(proj)
+    url = cloneUrlForRef(ref)
     dest.parent.mkdir(parents=True, exist_ok=True)
-    print(f"cloning: {proj.path_with_namespace} -> {dest}")
+    print(f"cloning: {ref.namespacePath} -> {dest}")
     completed = subprocess.run(
         ["git", "clone", url, str(dest)],
         capture_output=True, text=True,
     )
     if completed.returncode != 0:
-        log.error(f"clone failed for {proj.path_with_namespace}: {completed.stderr.strip()}")
-        return {"path": proj.path_with_namespace, "dest": str(dest), "status": "failed"}
-    return {"path": proj.path_with_namespace, "dest": str(dest), "status": "cloned"}
+        log.error(f"clone failed for {ref.namespacePath}: {completed.stderr.strip()}")
+        return {"path": ref.namespacePath, "dest": str(dest), "status": "failed"}
+    return {"path": ref.namespacePath, "dest": str(dest), "status": "cloned"}
 
 
 ####+BEGIN: b:py3:cs:cmnd/classHead :cmndName "gitist_reposList" :comment "" :extent "verify" :ro "cli" :parsMand "" :parsOpt "" :argsMin 0 :argsMax 1 :pyInv ""
@@ -308,12 +401,10 @@ gitlab-pub-gitist.pcs -i gitist_reposList mohsen.byname-group
             return failed(cmndOutcome)
         groupPath = cmndArgs[0]
 
-        projects = groupProjects(groupPath)
-
         repos = []
-        for p in projects:
-            print(p.id, p.path_with_namespace)
-            repos.append({"id": p.id, "path": p.path_with_namespace})
+        for ref in listRepos(groupPath):
+            print(ref.ident, ref.namespacePath)
+            repos.append({"id": ref.ident, "path": ref.namespacePath})
 
         return cmndOutcome.set(
             opError=b.OpError.Success,
@@ -389,7 +480,7 @@ gitlab-pub-gitist.pcs -i gitist_reposClone --destBaseDir=/tmp/gitistTest mohsen.
 
         baseDir = pathlib.Path(destBaseDir).expanduser()
 
-        results = [cloneProject(proj, baseDir) for proj in groupProjects(groupPath)]
+        results = [cloneRef(ref, baseDir) for ref in listRepos(groupPath)]
 
         return cmndOutcome.set(
             opError=b.OpError.Success,
@@ -463,7 +554,7 @@ gitlab-pub-gitist.pcs -i gitist_clone --destBaseDir=/tmp/gitistTest mohsen.bynam
         projectPath = cmndArgs[0]
 
         baseDir = pathlib.Path(destBaseDir).expanduser()
-        result = cloneProject(projectByPath(projectPath), baseDir)
+        result = cloneRef(getRepo(projectPath), baseDir)
 
         return cmndOutcome.set(
             opError=b.OpError.Success,
