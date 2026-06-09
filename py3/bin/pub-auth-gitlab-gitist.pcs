@@ -15,14 +15,14 @@ from bisos.gitist import gitist_seedInfo
 cntrlInfo = gitist_seedInfo.cmndsControlInfo
 
 cntrlInfo.brand = gitist_seedInfo.GitProviderBrand.Gitlab
-cntrlInfo.serverConfigPath = "~/gitlabHosts.cfg"
+cntrlInfo.serverConfigPath = "~/credentials/git/gitlabHosts.cfg"
 cntrlInfo.serverConfigTag = "default"
 
-cntrlInfo.gitAccessType = gitist_seedInfo.GitAccessType.Anon
+# cntrlInfo.gitAccessType = gitist_seedInfo.GitAccessType.Anon
 # For authenticated cloning, flip to Auth and pick a method + ssh acct:
-# cntrlInfo.gitAccessType = gitist_seedInfo.GitAccessType.Auth
-# cntrlInfo.gitAuthAccessMethod = gitist_seedInfo.GitAuthAccessMethod.Ssh
-# cntrlInfo.gitAccessAcct = "gitlab-mohsen"   # Host alias in ~/.ssh/config
+cntrlInfo.gitAccessType = gitist_seedInfo.GitAccessType.Auth
+cntrlInfo.gitAuthAccessMethod = gitist_seedInfo.GitAuthAccessMethod.Ssh
+cntrlInfo.gitAccessAcct = "gitlab-mohsen"   # Host alias in ~/.ssh/config
 
 from bisos.csSeed import csCmndsList_seedInfo
 csCmnd = csCmndsList_seedInfo.csCmnd
@@ -30,10 +30,10 @@ csCmnd = csCmndsList_seedInfo.csCmnd
 csCmndsList = [
     csCmnd("gitist_reposList",  args="mohsen.byname-group", doContinue=True),
     csCmnd("gitist_reposClone",
-           pars=collections.OrderedDict([("destBaseDir", "~/gitistClones")]),
+           pars=collections.OrderedDict([("destBaseDir", "~/gitistClones/gitlab/auth")]),
            args="mohsen.byname-group", doContinue=True),
     csCmnd("gitist_clone",
-           pars=collections.OrderedDict([("destBaseDir", "~/gitistClones")]),
+           pars=collections.OrderedDict([("destBaseDir", "~/gitistClones/gitlab/auth")]),
            args="mohsen.byname-group/mohsen.byname-project", doContinue=True),
 
 ]

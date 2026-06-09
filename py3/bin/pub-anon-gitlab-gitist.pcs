@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """ #+begin_org
-* ~[Summary]~ :: A =PlantedCmndService= for Processing Git Orgs and Repos (github)
+* ~[Summary]~ :: A =PlantedCmndService= for Processing Git Groups and Repos
 #+end_org """
 
 from bisos.b import cs
@@ -14,27 +14,28 @@ from bisos.gitist import gitist_seed #  noqa: F401  # type: ignore[unused-import
 from bisos.gitist import gitist_seedInfo
 cntrlInfo = gitist_seedInfo.cmndsControlInfo
 
-cntrlInfo.brand = gitist_seedInfo.GitProviderBrand.Github
-cntrlInfo.serverConfigPath = "~/githubHosts.cfg"
+cntrlInfo.brand = gitist_seedInfo.GitProviderBrand.Gitlab
+cntrlInfo.serverConfigPath = "~/credentials/git/gitlabHosts.cfg"
 cntrlInfo.serverConfigTag = "default"
 
 cntrlInfo.gitAccessType = gitist_seedInfo.GitAccessType.Anon
 # For authenticated cloning, flip to Auth and pick a method + ssh acct:
 # cntrlInfo.gitAccessType = gitist_seedInfo.GitAccessType.Auth
 # cntrlInfo.gitAuthAccessMethod = gitist_seedInfo.GitAuthAccessMethod.Ssh
-# cntrlInfo.gitAccessAcct = "github-mohsen"   # Host alias in ~/.ssh/config
+# cntrlInfo.gitAccessAcct = "gitlab-mohsen"   # Host alias in ~/.ssh/config
 
 from bisos.csSeed import csCmndsList_seedInfo
 csCmnd = csCmndsList_seedInfo.csCmnd
 
 csCmndsList = [
-    csCmnd("gitist_reposList",  args="bisos-pip", doContinue=True),
+    csCmnd("gitist_reposList",  args="mohsen.byname-group", doContinue=True),
     csCmnd("gitist_reposClone",
-           pars=collections.OrderedDict([("destBaseDir", "~/gitistClones")]),
-           args="bisos-pip", doContinue=True),
+           pars=collections.OrderedDict([("destBaseDir", "~/gitistClones/gitlab/anon")]),
+           args="mohsen.byname-group", doContinue=True),
     csCmnd("gitist_clone",
-           pars=collections.OrderedDict([("destBaseDir", "~/gitistClones")]),
-           args="bisos-pip/gitist", doContinue=True),
+           pars=collections.OrderedDict([("destBaseDir", "~/gitistClones/gitlab/anon")]),
+           args="mohsen.byname-group/mohsen.byname-project", doContinue=True),
+
 ]
 
 csCmndsList_seedInfo.setup(
