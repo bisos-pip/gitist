@@ -10,15 +10,77 @@ of TODOs that I work with Claude to accomplish.
 
 Companion docs: [[file:AI-AGENTS.org][AI-AGENTS.org]] (agent guidance / layering), [[file:README.org][README.org]] (overview).
 
-* Stage 1 TODOs
+* Stage 1 TODOs --- Basic Cleanups
 ** +
-** TODO [#A] Example of a work-item for AI :ai:
+** TODO [#A] Add stdin :me:
 SCHEDULED: <2026-06-09 Tue>
-Description of a work-item
------ AI Results: ------
+Add dblock stdin for gitist-clone. Then mimic that for all commands.
+** TODO [#A] Get both sets of the menus (gitist, csCmnds) to work. :me:
+SCHEDULED: <2026-06-09 Tue>
+** TODO [#A] Add gitis-pull :ai:me:
+SCHEDULED: <2026-06-09 Tue>
+As an arg, "all" will be a special form.
+** TODO [#A] Confirm =PyGithub= lands in =setup.py= =install_requires=.  :me:ai:
+SCHEDULED: <2026-06-09 Tue>
+** DONE Consider a =.gitignore= guard so a filled-in =~/...Hosts.cfg= (or any copy with  :me:
+  a real token) can never be committed. (Real tokens currently live only in
+  $HOME, outside the repo.)
+  No need for that.
+** TODO =reposClone= returns =opError=Success= even if some clones fail (partial-failure  :ai:
+  tolerated; failures visible in =results[].status=). Revisit if you want
+  any-failure => failure.
 ** -
 
-* Stage 1: Example of a Stage
+* Stage 2 TODOs --- Unix Commands
+** +
+** TODO [#A] Create unix_csu.py file and commands :me:
+SCHEDULED: <2026-06-09 Tue>
+Each of the following is implemented as a csCmnd, where possible without a subproc.
+Primary use of these is for in csCmndsList in combination with gitist_ commands.
+- unix_cp srcFile1 srcFileN destFileorDir
+- unix_lnDs -- ln -s
+- unix_touch
+- unix_chown
+- unix_chmod
+- unix_mkdir
+- unix_mkdirDp
+- unix_mv
+- unix-rm
+- unix-bash
+** -
+
+* Stage 3 TODOs --- Sudo Commands
+** +
+** TODO [#A] Create sudo_csu.py file and commands :me:
+SCHEDULED: <2026-06-09 Tue>
+Each of the following is implemented as a csCmnd.
+Primary use of these is for in csCmndsList in combination with gitist_ commands.
+- sudo_chown
+- sudo_chmod
+** -
+
+* Stage 4 TODOs --- gitist_  More Commands
+** +
+** TODO [#A] Add to gitist_csu.py the following commands  :me:
+SCHEDULED: <2026-06-09 Tue>
+Each of the following is implemented as a csCmnd.
+Primary use of these is for in csCmndsList as gitist_ commands.
+- gitist_pull
+** -
+
+* Stage 5 TODOs  --- gitist_ for magit
+
+* Stage 6 TODOs --- bxoGitlab.cs  Replacement.
+
+* Stage 7 TODOs --- bx-gitRepos Replacement
+
+* Stage 8 TODOs --- bisos-pip/bases Replacement
+
+* Stage 9 TODOs --- Multiple csCmndsList
+listOfCsCmndsList That way you can have multiple csCmndsList in one file.
+
+
+* Stages
 
 A Stage is typically expressed as a set of TODO lists
 and well defines goals.
