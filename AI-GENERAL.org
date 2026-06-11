@@ -1,71 +1,37 @@
-#+title: AI Agents Guidance for bisos.gitist
+#+title: AI Agents Guidance for bisos.newPkg
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 * Table of Contents     :TOC:
-- [[#ai-collaboration-workflow][AI Collaboration Workflow]]
-- [[#general-aspects-of-this-package][General Aspects of This Package]]
-- [[#development-status-and-continuation-of-development][Development Status and Continuation of Development]]
-- [[#work-plan][Work Plan]]
-- [[#project-overview][Project Overview]]
-- [[#this-repo-is-part-of-bisos-pip----common-structure-of-repos-in-the-bisos-pip-organization][This Repo is Part of bisos-pip -- Common Structure of Repos in the bisos-pip Organization]]
-- [[#bisosgitist-is-layered-on-top-of-pycs-framework-bisosb-and-bisospycs][bisos.gitist is Layered on Top of PyCS-Framework (bisos.b and bisos.pycs)]]
-- [[#bisosgitist-is-layered-on-top-of-bisoscsseed][bisos.gitist is Layered on top of bisos.csSeed]]
-- [[#commands][Commands]]
-- [[#writing-cs-commands][Writing CS commands]]
+- [[#general-this-repo-is-part-of-bisos-pip----common-structure-of-repos-in-the-bisos-pip-organization][General: This Repo is Part of bisos-pip -- Common Structure of Repos in the bisos-pip Organization]]
+- [[#general-python-programming-and-testing][General: Python Programming and Testing]]
+- [[#git-commits-and-git-pushes][Git Commits and Git Pushes]]
+- [[#general-this-repo-is-layered-on-top-of-pycs-framework-bisosb-and-bisospycs][General: This Repo is Layered on Top of PyCS-Framework (bisos.b and bisos.pycs)]]
+- [[#general-commands][General: Commands]]
+- [[#general-writing-cs-commands][General: Writing CS commands]]
 
-* AI Collaboration Workflow
+* General: This Repo is Part of bisos-pip -- Common Structure of Repos in the bisos-pip Organization
 
-See [[file:./MB-AI-WorkFlow.org]] for Mohsen's overall AI collaborative development workflow.
+See
 
-@./MB-AI-WorkFlow.org
+@/bisos/git/bxRepos/bisos-pip/.github/profile/readme.org
 
-* General Aspects of This Package
+* General: Python Programming and Testing
 
-See [[file:./AI-GENERAL.org]] for details.
+For any new project or module or file, use type hinting.
+For exisiting code, if type hinting is not used, don't add any hints.
 
-@./AI-GENERAL.org
+This  project does not have a CI/CD or liniting tools.
 
-* Development Status and Continuation of Development
+See Specific for smoke tests.
 
-Current state of development is at: [[file:./AI-DevStatus.org]]
+* Git Commits and Git Pushes
 
-@./AI-DevStatus.org
+I don't want Claude to suggest the prompt of "commit this" or "push this".
+I want to do all the commits and pushes myself.
+Instead just suggest that I can commit.
 
-* Work Plan
-
-AI collaborative developemnt uses [[file:./AI-WorkPlan.org]]
-
-@./AI-WorkPlan.org
-
-* Project Overview
-
-*Continuing development?* See [[file:gitist-devStatus.org][gitist-devStatus.org]] for the current working state:
-what is implemented and verified, the brand-adapter design, the config/venv
-setup that lives OUTSIDE the repo (=~/...Hosts.cfg=, the =dev-bisos3= venv,
-PyGithub), open items, and design decisions.
-
-bisos.gitist is a Python package, part of BISOS (ByStar Internet Services
-Operating System), built on the [[https://github.com/bisos-pip/pycs][PyCS-Framework]]
-(=bisos.b.cs=).
-
-The Python project lives under =py3/=; the package source is =py3/bisos/gitist/=.
-The executables are in =py3/bin=.
-
-This package builds on bisos.csSeed's csCmndsList to provide git cloning and related capabilities.
-
-The name gitist as git+ist is meant to be similar to artist. The eventual scope could be all things git.
-For now the scope is primarily cloning for two brands. The "gitlab" brand and the "github" brand.
-So, we import gitlab and github python packages and marry them to the PyCS framework and then we make them seeded.
-
-Given that we can inherit seeding of csCmndsList, all that we need to do in
-bisos.gitist is the implementation of git related facilities as cs.Cmnd
-
-* This Repo is Part of bisos-pip -- Common Structure of Repos in the bisos-pip Organization
-
-See @/bisos/git/bxRepos/bisos-pip/.github/profile/readme.org for details.
-
-* bisos.gitist is Layered on Top of PyCS-Framework (bisos.b and bisos.pycs)
+* General: This Repo is Layered on Top of PyCS-Framework (bisos.b and bisos.pycs)
 
 PyCS-Framework is documented in:
 
@@ -85,11 +51,7 @@ Its Blee-Panel is @/bisos/git/bxRepos/bisos-pip/b/py3/panels/bisos.b/_nodeBase_/
 When descending into either repo, follow its own =AI-AGENTS.org= (if present)
 the same way this file points up to the org-wide readme.
 
-* bisos.gitist is Layered on top of bisos.csSeed
-
-See @/bisos/git/bxRepos/bisos-pip//csSeed/CLAUDE.md
-
-* Commands
+* General: Commands
 
 All commands assume you are in =py3/=. For build, install, and publish, see
 *bisos-pip Build System* above.
@@ -109,7 +71,7 @@ is captured inline in each command via =self.captureRunStr(...)=.
 Some execution examples are at:
 @/bisos/git/bxRepos/bisos-pip/gitist/py3/panels/bisos.gitist/_nodeBase_/fullUsagePanel-en.org
 
-* Writing CS commands
+* General: Writing CS commands
 
 Commands are classes subclassing =cs.Cmnd= (from =bisos.b import cs=). Each
 declares =cmndParamsMandatory=, =cmndParamsOptional=, =cmndArgsLen=, and a

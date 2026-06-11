@@ -1,4 +1,5 @@
 #+title: bisos.gitist --- Development Status & Continuation Handoff
+#+TAGS: me(m) ai(a)
 
 This file is a working-state handoff so development can continue on another
 machine (which has this repo but NOT the developer's =~=). It captures the
@@ -6,6 +7,7 @@ architecture, what works, what is untested, the config/venv setup that lives
 OUTSIDE the repo, and the design decisions made so far.
 
 Companion docs: [[file:AI-AGENTS.org][AI-AGENTS.org]] (agent guidance / layering), [[file:README.org][README.org]] (overview).
+
 
 * What gitist is
 
@@ -160,21 +162,6 @@ Wired but NOT runtime-tested:
 - github =reposClone= was not mass-run (it = =listRepos= [verified] + =cloneRef=
   per repo [verified via =gitist_clone=]).
 
-* Open items / TODO
-
-- Runtime-test the Auth path (ssh and/or https-token), both brands.
-- Confirm =PyGithub= lands in =setup.py= =install_requires=.
-- Consider a =.gitignore= guard so a filled-in =~/...Hosts.cfg= (or any copy with
-  a real token) can never be committed. (Real tokens currently live only in
-  $HOME, outside the repo.)
-- =reposClone= returns =opError=Success= even if some clones fail (partial-failure
-  tolerated; failures visible in =results[].status=). Revisit if you want
-  any-failure => failure.
-- github =reposClone= default arg in the plant is =bisos-pip= (~69 repos) --- a
-  heavy default for =csCmndsRun all=. Consider a smaller default target.
-- Security note: an earlier real gitlab PAT was briefly placed in
-  =py3/config/gitlabHosts.cfg= and redacted BEFORE any commit (so it is NOT in
-  git history / not pushed). Rotating it is optional hygiene.
 
 * Design decisions (the "why")
 
