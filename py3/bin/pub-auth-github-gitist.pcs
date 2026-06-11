@@ -22,7 +22,7 @@ cntrlInfo.serverConfigTag = "default"
 # For authenticated cloning, flip to Auth and pick a method + ssh acct:
 cntrlInfo.gitAccessType = gitist_seedInfo.GitAccessType.Auth
 cntrlInfo.gitAuthAccessMethod = gitist_seedInfo.GitAuthAccessMethod.Ssh
-cntrlInfo.gitAccessAcct = "mb2_github"   # Host alias in ~/.ssh/config
+cntrlInfo.gitAccessAcct = "mb1_github"   # Host alias in ~/.ssh/config
 
 from bisos.csSeed import csCmndsList_seedInfo
 csCmnd = csCmndsList_seedInfo.csCmnd

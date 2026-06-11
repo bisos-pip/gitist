@@ -19,16 +19,16 @@ Layering: PyCS-Framework (=bisos.b.cs=) -> seeded/planted (=gitist.cs=) ->
 
 * Repo map (the files that matter)
 
-| File | Role |
-|------+------|
-| =py3/bin/gitist.cs= | the seed executable; csuList = csxuFps_csu, gitist_csu, csCmndsList_csu, plantedCsu |
-| =py3/bin/gitlab-pub-gitist.pcs= | gitlab plant (brand=Gitlab, cfg path/tag, access policy, declares the 3 csCmnds) |
-| =py3/bin/github-pub-gitist.pcs= | github plant (brand=Github, ...) |
-| =py3/bisos/gitist/gitist_csu.py= | ALL the commands + the brand adapter layer |
-| =py3/bisos/gitist/gitist_seedInfo.py= | =CmndsControlInfo= dataclass (singleton =cmndsControlInfo=) + enums |
-| =py3/bisos/gitist/gitist_seed.py= | atexit shim -> =seedsLib.plantWithWhich('gitist.cs')= (no logic of its own) |
-| =py3/config/gitlabHosts.cfg= | TEMPLATE (no secrets) --- python-gitlab native format |
-| =py3/config/githubHosts.cfg= | TEMPLATE (no secrets) --- gitist's own INI format |
+| File                                | Role                                                                                |
+|-------------------------------------+-------------------------------------------------------------------------------------|
+| =py3/bin/gitist.cs=                   | the seed executable; csuList = csxuFps_csu, gitist_csu, csCmndsList_csu, plantedCsu |
+| =py3/bin/gitlab-pub-gitist.pcs=       | gitlab plant (brand=Gitlab, cfg path/tag, access policy, declares the 3 csCmnds)    |
+| =py3/bin/github-pub-gitist.pcs=       | github plant (brand=Github, ...)                                                    |
+| =py3/bisos/gitist/gitist_csu.py=      | ALL the commands + the brand adapter layer                                          |
+| =py3/bisos/gitist/gitist_seedInfo.py= | =CmndsControlInfo= dataclass (singleton =cmndsControlInfo=) + enums                     |
+| =py3/bisos/gitist/gitist_seed.py=     | atexit shim -> =seedsLib.plantWithWhich('gitist.cs')= (no logic of its own)           |
+| =py3/config/gitlabHosts.cfg=          | TEMPLATE (no secrets) --- python-gitlab native format                               |
+| =py3/config/githubHosts.cfg=          | TEMPLATE (no secrets) --- gitist's own INI format                                   |
 
 * Architecture: the brand-neutral adapter design
 
