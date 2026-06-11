@@ -22,7 +22,7 @@ completing the task, I ask Claude to summarize it, mark it as done and archive
 it.
 
 Here is a list of the AI collaboration files that I maintain for each project/repo.
-The third column is one of: const, ai, u+ai --- which says who produces the file.
+The third column is one of: const, ai, you, u+ai --- which says who produces the file.
 
 |--------------------+------------------------------------------------------------------+-------|
 | ./CLAUDE.md        | Default for Claude, imports ./AI-AGENTS.org to enable org-mode   | const |
@@ -31,7 +31,7 @@ The third column is one of: const, ai, u+ai --- which says who produces the file
 |                    | It imports ./AI-GENERAL.org, ./AI-DevStatus.org,                 |       |
 |                    | ./AI-WorkPlan.org and  ./AI-WorkPlan-archive.org                 |       |
 |--------------------+------------------------------------------------------------------+-------|
-| ./AI-GENERAL.org   | Here I keep all of my activity related preferences,              | u+ai  |
+| ./AI-GENERAL.org   | Here I keep all of my activity related preferences,              | you   |
 |                    | For example, for python; use type hints                          |       |
 |--------------------+------------------------------------------------------------------+-------|
 | ./AI-DevStatus.org | After every major interaction, I ask Claude to update this with  | ai    |
