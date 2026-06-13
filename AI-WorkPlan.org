@@ -79,6 +79,7 @@ Primary use of these is for in csCmndsList as gitist_ commands.
 * Stage 9 TODOs --- Multiple csCmndsList
 listOfCsCmndsList That way you can have multiple csCmndsList in one file.
 
+* Stage 10 TODOs --- Add profiles and pinning -- Similar to straight
 
 * Stages
 
