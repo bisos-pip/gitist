@@ -25,6 +25,7 @@ Table of Contents TOC
 
 -  `Overview <#overview>`__
 -  `Gitist Layers <#gitist-layers>`__
+-  `Post-Installation Setup <#post-installation-setup>`__
 -  `Installation <#installation>`__
 
    -  `Installation With pip <#installation-with-pip>`__
@@ -49,6 +50,31 @@ Gitist Layers
 #. Seeded/Planted PyCS Framework (gitist.cs)
 #. Common csCmndsList (bisos.csSeed)
 #. Gitist Commands CSUs
+
+Post-Installation Setup
+=======================
+
+After installing, run the provisioning script to create the credentials
+directory and place the configuration templates:
+
+.. code:: bash
+
+   config/provision.pcs -i credsSetup
+
+This creates ``~/credentials/git/`` and copies two config files there if
+they do not already exist:
+
+-  ``~/credentials/git/githubHosts.cfg`` — GitHub configuration; insert
+   your GitHub PAT (Personal Access Token) here.
+-  ``~/credentials/git/gitlabHosts.cfg`` — GitLab configuration; insert
+   your GitLab PAT here.
+
+Once the PATs are in place, you can run the gitist proc scripts, e.g.:
+
+.. code:: bash
+
+   bin/github-pub-gitist.pcs
+   bin/gitlab-pub-gitist.pcs
 
 Installation
 ============

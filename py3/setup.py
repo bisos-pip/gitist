@@ -43,7 +43,7 @@ def longDescription():
 # b:py3:pypi:setup/version Arguments  :forSys t :forPyPi t :constant "666"
 ####+BEGIN: b:py3:pypi:setup/version :comment "Auto Detected"
 
-# ./pypiUploadVer DID NOT exist -- forPypiVersion=0.1 -- forLocalVersion=0.1 -- constant=NA
+# ./pypiUploadVer DID NOT exist -- forPypiVersion=0.11 -- forLocalVersion=0.1 -- constant=NA
 def pkgVersion():
         return '0.1'
 
@@ -68,10 +68,11 @@ requires = [
 
 scripts = [
 'bin/bxoGitlab.cs',
-'bin/github-pub-gitist.pcs',
 'bin/gitist.cs',
-'bin/gitlab-pub-gitist.pcs',
-'bin/list_projects.py',
+'bin/pub-anon-github-gitist.pcs',
+'bin/pub-anon-gitlab-gitist.pcs',
+'bin/pub-auth-github-gitist.pcs',
+'bin/pub-auth-gitlab-gitist.pcs',
 ]
 ####+END:
 

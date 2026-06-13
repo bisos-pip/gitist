@@ -17,6 +17,7 @@ gitist.cs is a seed. Common usages of gitist take the form of a gitistProc.pcs.
 * Table of Contents     :TOC:
 - [[#overview][Overview]]
 - [[#gitist-layers][Gitist Layers]]
+- [[#post-installation-setup][Post-Installation Setup]]
 - [[#installation][Installation]]
   - [[#installation-with-pip][Installation With pip]]
   - [[#installation-with-pipx][Installation With pipx]]
@@ -33,6 +34,30 @@ gitist.cs is a seed. Common usages of gitist take the form of a gitistProc.pcs.
 2) Seeded/Planted PyCS Framework (gitist.cs)
 3) Common csCmndsList (bisos.csSeed)
 4) Gitist Commands CSUs
+
+
+* Post-Installation Setup
+
+After installing, run the provisioning script to create the credentials directory
+and place the configuration templates:
+
+#+begin_src bash
+config/provision.pcs -i credsSetup
+#+end_src
+
+This creates =~/credentials/git/= and copies two config files there if they do
+not already exist:
+
+- =~/credentials/git/githubHosts.cfg= — GitHub configuration; insert your GitHub PAT (Personal Access Token) here.
+- =~/credentials/git/gitlabHosts.cfg= — GitLab configuration; insert your GitLab PAT here.
+
+Once the PATs are in place, you can run the gitist proc scripts, e.g.:
+
+#+begin_src bash
+bin/github-pub-gitist.pcs
+bin/gitlab-pub-gitist.pcs
+#+end_src
+
 
 * Installation
 
