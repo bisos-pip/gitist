@@ -85,7 +85,7 @@ import atexit
 
 from bisos.csSeed import seedsLib
 
-seedCSMU = 'gitist.cs'
+seedCSXU = 'gitist-seed.cs'
 
 ####+BEGIN: b:py3:cs:func/typing :funcName "atexit_plantWithWhich" :funcType "extTyped" :comment "expects gitist.cs" :deco "atexit.register"
 """ #+begin_org
@@ -94,13 +94,13 @@ seedCSMU = 'gitist.cs'
 @atexit.register
 def atexit_plantWithWhich(
 ####+END:
-        asExpected: str=seedCSMU,
+        seedName: str=seedCSXU,
 ) -> None:
     """ #+begin_org
 ** [[elisp:(org-cycle)][| *DocStr | ] shim over b.importFile.plantWithWhich
     #+end_org """
 
-    seedsLib.plantWithWhich(asExpected)
+    seedsLib.plantWithWhich(seedName)
 
 
 ####+BEGIN: b:py3:cs:framework/endOfFile :basedOn "classification"
