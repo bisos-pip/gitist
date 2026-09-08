@@ -50,7 +50,7 @@ def pkgVersion():
 ####+END:
 
 # b:py3:pypi:setup/requires :extras ; :requirements "requirements.txt" (bring here requirements.txt)
-####+BEGIN: b:py3:pypi:setup/requires :extras ()
+####+BEGIN: b:py3:pypi:setup/requires :extras ("PyGithub")
 
 requires = [
 "bisos",
