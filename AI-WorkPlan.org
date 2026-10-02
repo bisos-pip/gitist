@@ -10,6 +10,11 @@ of TODOs that I work with Claude to accomplish.
 
 Companion docs: [[file:AI-AGENTS.org][AI-AGENTS.org]] (agent guidance / layering), [[file:README.org][README.org]] (overview).
 
+* Stages
+
+A Stage is typically expressed as a set of TODO lists
+and well defines goals.
+
 * Stage 1 TODOs --- Basic Cleanups
 ** +
 ** TODO [#A] Add stdin :me:
@@ -81,10 +86,7 @@ listOfCsCmndsList That way you can have multiple csCmndsList in one file.
 
 * Stage 10 TODOs --- Add profiles and pinning -- Similar to straight
 
-* Stages
-
-A Stage is typically expressed as a set of TODO lists
-and well defines goals.
+* Stage 11 TODOs --- Addition of periodicaly running git tools such as gitleaks
 
 # Local Variables:
 # eval: (setq-local toc-org-max-depth 4)
