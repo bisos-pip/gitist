@@ -4,6 +4,9 @@
 #+OPTIONS: toc:4
 #+TAGS: me(m) ai(a)
 
+####+BEGIN: b:ai:workflow/driver
+####+END:
+
 This Work Plan file drives the AI collaborative development.
 Interactions are broken down into "Stages". Each Stage has a set
 of TODOs that I work with Claude to accomplish.
