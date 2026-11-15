@@ -26,6 +26,7 @@ gitist.cs is a seed. Common usages of gitist take the form of a gitistProc.pcs.
 
 * Table of Contents     :TOC:
 - [[#overview][Overview]]
+- [[#gitist-model-abstractions-and-terminology][Gitist Model, Abstractions and Terminology]]
 - [[#gitist-layers][Gitist Layers]]
 - [[#post-installation-setup][Post-Installation Setup]]
 - [[#installation][Installation]]
@@ -37,6 +38,30 @@ gitist.cs is a seed. Common usages of gitist take the form of a gitistProc.pcs.
   - [[#bisosgitist-blee-panels][bisos.gitist Blee-Panels]]
 - [[#support][Support]]
 - [[#planned-improvements][Planned Improvements]]
+
+* Gitist Model, Abstractions and Terminology
+
+- A *Repo*: A BISOS gitist repo, is just that, a repo. There are no issues, no projects etc that github and
+  gitlab have combined with a repo.
+- A *<<gitGroup>>*: A collection of co-anchored set of repos. Github calls then "organization". Gitlab calls them
+  "group" and "subGroup".
+  Each gitGroup has two special repos: "gitGroup" and "base".
+  -- For github gitGroup is a symlink to the .github repo.
+  -- The base repo keeps utilities specific to the gitGroup.
+- *<<gitGroup-Repos-Profile>>* : A labeling mechanism to create sub-sets of repos of a [[gitGroup]]
+  Sub-sets of the repos within a gitGroup can be addressed by labels.
+-  *<<gitGroupsSet>>*: Named list of gitGroups. For example gitGroupsSet-rawBisos, includes:
+  ["bisos-pip", "blee", "bxObjects"].
+  and their canonical base at /bisos/git
+  Each named gitGroupsSet includes the following:
+  - A list of gitGroups
+  - Pointer to a [[gitGroupsSetServer]]
+  A named gitGroupsSet is typically kept in a top level repo.
+- *<<gitGroupsSetServer>>* : Information related to the git server that holds the named [[gitGroupsSet]] repos.
+  This info include:
+  - type of gitGroupsSetServer (github, gitlab)
+  - Reference to credentials for the gitSerevr
+  - Base address for the gitGroupsSetServer
 
 * Gitist Layers
 

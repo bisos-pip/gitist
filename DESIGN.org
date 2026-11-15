@@ -1,0 +1,73 @@
+
+* About This Design Document
+
+ This design document exists in combination with the following:
+
+ - ./README.org : Which defines model and terminology
+ - ./AI-Activity.org : Which assists with bisos-pip implementation of this design
+ - ./AI-WorkPlan.org : Which drives the implementation of this design.
+ - ./powerOfBisos.org : Some philosphical direction
+
+ This design document functions as a direction statement.
+ Not all of it will be implemented in one shot.
+
+As the design is implemented, parts of this document should be moved to README.org
+
+* Gitist both as a bootstrapper and a maintainer
+
+ There are two aspects to gitists 1) it is used for initial cloning
+ 2) it is used for continous development (including integration with magit)
+
+* The Big Picture of Merging gitist with sbom.
+
+In the context of its initial cloning, gitist should be merged with sbom
+as well remaining independent. pycs _csu.py and .pcs framework allows for this.
+
+The end goal is to cultivate the -sbom.pcs mode to approach the likes of Ansible Playbook.
+
+For this in addition to gitist and exisiting sbom facilities with need to also create
+ a "fileSys" set of .pcs facilities for creation of directories, files, links, and permissions.
+
+ With these in place all the exisiting scripts in bisos-pip/common abd bisos-pip/bx-bases can be retired.
+ All of those can become -sbom.pcs specs.
+
+* Migration Towards gitist
+
+** The base repo:
+
+The <<base repo>> predates existance of .github repos. It was intended to be something similar.
+The gitGroup (for example bisos-pip) was renamed to be the [[base repo]] after having been cloned.
+
+All of that proved not to be useful.
+
+ We now should recognize a gitGroup by the existence of two mandatory directories. base and gitGroup.
+
+ [[base repo]] will now be used to host the py3/bin/<name>_gitgroup.spcs -- This is now in the [[overview repo]]
+ but will be relocated to [[base repo]]
+
+** The overview repo:
+
+The <<overview repo>> predates existance of .github repos. It was intended to be something similar.
+
+Then yesterday we started using it to host the py3/bin/<name>_gitgroup.spcs -- This is now in the [[overview repo]]. Today I have decided that "overview" is not a good name for it and "base" is better. So, it will be relocated.
+
+** The model of bisos.bx-bases and bisos.common is the old way of bootstrapping rawBisos
+
+That should all be replaced by the next generation of -sbom.pcs
+
+* Purposes of gitist facilities
+
+- Some gitist facilities are purely used for bootstrapping  (cloning)
+- Some gitist facilities can only be used after bootstrapping
+- Some gitist facilities include features that span both 
+
+Each facility needs to identify the above
+
+** New facilities to be considered:
+
+*** gitistGroup.cs  -- Mostly post clone -- Also used for cloning post bootstrap
+ As arguments  and also on stdin it takes  gitGroup as base dirs
+ For example:
+
+ gitistGroup.cs -i pull /bisos/git/bxRepos/bisos-pip
+

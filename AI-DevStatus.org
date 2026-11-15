@@ -6,8 +6,27 @@ machine (which has this repo but NOT the developer's =~=). It captures the
 architecture, what works, what is untested, the config/venv setup that lives
 OUTSIDE the repo, and the design decisions made so far.
 
-Companion docs: [[file:AI-AGENTS.org][AI-AGENTS.org]] (agent guidance / layering), [[file:README.org][README.org]] (overview).
+Companion docs: AI-WORKFLOW.org, AI-Activity.org (the shared bisos-pip guidance), AI-WorkPlan.org
+(its Overview holds what the retired AI-AGENTS.org said about gitist), [[file:README.org][README.org]].
 
+
+* Current State (2026-11-15)
+
+- AI-Activity migrated to the current layout (it was an old-layout sub); see AI-WorkPlan.org's header.
+- *gitGroup consistency engine* (WorkPlan Stage 7; bisos-pip/overview WorkPlan Stage 5), built and
+  tested, uncommitted: =gitGroup_seed.py=, =gitGroup_seedInfo.py=, =gitGroup_csu.py=,
+  =bin/gitGroup-seed.cs=. A gitGroup's plant, =<gitGroup>_gitGroup.pcs= in its overview repo's
+  =py3/bin/=, declares base, exclude and rules (=fileFromTemplate=, =notTracked=). Statuses: ok,
+  missing, stale (an earlier template version), drift, custom (declared), tracked. =gitGroup_update=
+  writes only missing/stale (drift with =--replaceDrift=true=); never stages. Read-only on bisos-pip:
+  76 members; .gitignore drift 49, missing 16, stale 10; .gitattributes missing 17; 57 track the
+  generated files. Next: the bisos-pip plant (7.3), the run (7.4), docs (7.5). =bx-gitRepos= stays.
+- 2026-11-15 later (7.6-7.9): cached lists for Blee's Magit menus; =.spcs= plants that take the
+  gitGroup's name and directory (=gitGroupDir=, formerly =base=) from where they live; plants moved
+  from the =overview= repos to the =base= repos (=bisos-pip/base/py3/bin/bisos-pip_gitGroup.spcs=,
+  =blee/base/py3/bin/blee_gitGroup.spcs=, on PATH via bsip4). Direction: DESIGN.org.
+- The rest of this file predates the 2026 renames: the seed is =bin/gitist-seed.cs= and the plants
+  are =bin/pub-{anon,auth}-{github,gitlab}-gitist.pcs= (7.5 corrects the text below).
 
 * What gitist is
 
@@ -119,8 +138,7 @@ Anon= in the plant.
 The =bin/*.pcs= / =*.cs= run under =python= on PATH, which is
 =/bisos/venv/py3/dev-bisos3/bin/python=. That is where =bisos.gitist= is
 editable-installed and where =gitlab= (python-gitlab) and =github= (PyGithub)
-live. (CLAUDE.md cites =/bisos/venv/py3/bisos3= for lint/mypy --- that is NOT the
-runtime interpreter.)
+live. (=/bisos/venv/py3/bisos3= is the PyPI install, NOT the runtime interpreter here.)
 
 Dependencies: =python-gitlab= and =PyGithub=. If PyGithub is missing on the new
 machine:

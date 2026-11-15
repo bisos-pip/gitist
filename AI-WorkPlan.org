@@ -1,22 +1,85 @@
-#+title: RepoNameComesHere --- Work Plan
+#+title: Work Plan
 #+DATE: <2026-06-10 Wed 13:54>
 #+AUTHOR: Mohsen BANAN
 #+OPTIONS: toc:4
-#+TAGS: me(m) ai(a)
+#+TAGS: me ai aiAndMe
+
+# Migrated 2026-11-15 to the current AI-Activity layout (aiActivity.cs -i initiate --activity=bisos-pip;
+# CLAUDE.md re-copied from the template; AI-AGENTS.org, AI-GENERAL.org, AI-AGENTS-GENERAL.org and
+# AI-Workflow.org retired --- their gitist-specific content is under Overview below).
 
 ####+BEGIN: b:ai:workflow/driver
+*  [[elisp:(revert-buffer)][revert-buffer]] | [[elisp:(toggle-read-only)][read/wr]] | [[elisp:(show-all)][Show-All]]  [[elisp:(org-shifttab)][Overview]]  [[elisp:(progn (org-shifttab) (org-content))][Content]] | [[elisp:(delete-other-windows)][(1)]] | [[elisp:(progn (save-buffer) (kill-buffer))][S&Q]] [[elisp:(save-buffer)][Save]] [[elisp:(kill-buffer)][Quit]] [[elisp:(bury-buffer)][Bury]] [[elisp:(magit)][Magit]]
+*  [[elisp:(org-cycle)][AI Workflow Driver :: /bx- commands]]    *After |S|: submitted*
+  newStart :: [[elisp:(blee:bnsm:panel-goto "/bisos/panels/bisos-core/bisos-pip/bisos.aiActivity/newStart/_nodeBase_")][Panel]] | [[bashRun:vscodeClaude-assemble.cs -i fullCheck][setup-check]] | [[bashRun:vscodeClaude-assemble.cs -i fullUpdate][setup]] | [[elisp:(b:vscode/init)][partner-init]] | [[elisp:(b:vscode/partnerShow)][partner-show]] | [[aiActivity:session-start][session-start]]
+  VS Code  :: [[elisp:(b:vscode/fileOpen)][Visit]] | [[elisp:(b:vscode/rootOpen)][root-window]] | [[elisp:(b:vscode:claude/dispatch)][Transient]]
+  Session  :: [[elisp:(b:vscode:claude/sessionSelect)][select-session]] | [[aiActivity:session-start][session-start]] | [[aiActivity:session-report][session-report]]  *|S|*  [[aiActivity:S=session-start][session-start]]
+  Activity :: [[aiActivity:activity-reach][activity-reach]] | [[aiActivity:activity-report][activity-report]]  *|S|*  [[aiActivity:S=activity-reach][activity-reach]]
+  Read     :: [[aiActivity:status-read][status-read]] | [[aiActivity:archive-read][archive-read]] | [[aiActivity:ai-outputs][ai-outputs]]  *|S|*  [[aiActivity:S=status-read][status-read]] | [[aiActivity:S=archive-read][archive-read]] | [[aiActivity:S=ai-outputs][ai-outputs]]
+  Work     :: [[aiActivity:todo-do][todo-do]] | [[aiActivity:todo-done][todo-done]]  *|S|*  [[aiActivity:S=todo-do][todo-do]] | [[aiActivity:S=todo-done][todo-done]]
+  Record   :: [[aiActivity:status-update][status-update]] | [[aiActivity:archive-update][archive-update]]  *|S|*  [[aiActivity:S=status-update][status-update]] | [[aiActivity:S=archive-update][archive-update]]
+  Git      :: [[aiActivity:git-commit-msg][git-commit-msg]] | [[aiActivity:git-commit-walk][git-commit-walk]]  *|S|*  [[aiActivity:S=git-commit-msg][git-commit-msg]]
+  Close    :: [[aiActivity:git-uncommitted-list][git-uncommitted-list]] | [[aiActivity:session-verify][session-verify]]  *|S|*  [[aiActivity:S=git-uncommitted-list][git-uncommitted-list]] | [[aiActivity:S=session-verify][session-verify]]
+
+####+END:
+
+####+BEGIN: b:ai:file/particulars
+* AI Working Context
+  Working Directory: /bxRepos/bisos-pip/gitist
+  File: /bisos/git/auth/bxRepos/bisos-pip/gitist/AI-WorkPlan.org
+  Activity: bisos-pip
+  Companion Docs: AI-WORKFLOW.org, AI-Activity.org, AI-DevStatus.org, README.org
+
 ####+END:
 
 This Work Plan file drives the AI collaborative development.
 Interactions are broken down into "Stages". Each Stage has a set
 of TODOs that I work with Claude to accomplish.
 
-Companion docs: [[file:AI-AGENTS.org][AI-AGENTS.org]] (agent guidance / layering), [[file:README.org][README.org]] (overview).
+Note to a fresh Claude: read this file together with AI-WORKFLOW.org,
+AI-Activity.org and AI-DevStatus.org to orient yourself. The =<<Context Confirmation>>=
+TODO below is the standard first step, or use =/bx-session-start= as the automated equivalent.
+TODOs tagged =:ai:= are assigned to Claude. After completing a TODO, summarize results
+under =----- Results: ------= and mark it DONE.
 
-* Stages
+* Overview, Purpose and Context
 
-A Stage is typically expressed as a set of TODO lists
-and well defines goals.
+<<Overview>>
+
+bisos.gitist is a bisos-pip package (=py3/bisos/gitist/=, executables in =py3/bin=), a seed/plant
+tool on =bisos.csSeed='s =csCmndsList=. The name is git+ist, as in artist: the eventual scope is all
+things git. Today it mass-clones for two brands, *gitlab* (python-gitlab) and *github* (PyGithub),
+through brand-neutral commands over a thin brand adapter (=RepoRef=); see AI-DevStatus.org for the
+architecture, the config files kept outside the repo, and what is verified.
+
+- Commands live in =py3/bisos/gitist/gitist_csu.py=; =whichReactFramework= and =placeHolder= there are
+  templates for new ones. Register each in the seed's example menu (=examples_csu= / =examples_seed=).
+- No unit tests: verify by running the plants of =py3/bin/gitist-seed.cs=
+  (=py3/bin/pub-{anon,auth}-{github,gitlab}-gitist.pcs=) and comparing with the =captureRunStr(...)=
+  blocks in each command. (AI-DevStatus.org still names them =gitist.cs=, =gitlab-pub-gitist.pcs=.)
+- Runtime interpreter: =/bisos/venv/py3/dev-bisos3/bin/python= (editable install there).
+- gitist is where the gitGroup concept lands (bisos-pip/overview WorkPlan Stage 3): a collection of
+  repos independent of the git server (GitHub organization, GitLab group/subgroup). Stage 7 (replacing
+  =bx-gitRepos=) starts with the gitGroup consistency engine (bisos-pip/overview WorkPlan 5.1).
+
+The model and terminology of ./README.org will be used through out.
+
+The ./DESIGN.org is used to drive this workplan.
+
+* Stage 0: Confirm AI's Understanding of This Repo's Context
+
+Goal: Confirm AI's understanding of the context and capture that in [[Context Confirmation]] TODO.
+
+* Stage 0 TODOs
+** +
+** LOOP [#A] <<Context Confirmation>> for AI (typically triggered by /bx-session-start) :aiAndMe:
+Must be repeated each time a new Claude instance is started here.
+Based on the series of files starting from CLAUDE.md in this repo,
+describe succinctly what you have understood.
+Enumerate explicitly which files you have imported and which you have considered.
+Prompt the user to confirm that the desired/appropriate model (/model) is being used for this project.
+Since this is to be repeated, leave the todo tag as LOOP.
+** -
 
 * Stage 1 TODOs --- Basic Cleanups
 ** +
@@ -81,6 +144,293 @@ Primary use of these is for in csCmndsList as gitist_ commands.
 * Stage 6 TODOs --- bxoGitlab.cs  Replacement.
 
 * Stage 7 TODOs --- bx-gitRepos Replacement
+
+<<Stage 7>>
+
+Goal: gitist becomes the modern way of doing what =bx-gitRepos= (=/bisos/core/bsip/bin/bx-gitRepos=,
+bash) does. =bx-gitRepos= is *not* obsoleted: it stays as is, beside gitist (user, 2026-11-15). Start
+with what bisos-pip/overview WorkPlan 5.1 asks for: a *gitGroup consistency engine*. A gitGroup is a
+directory of repos (bisos-pip: =/bisos/git/bxRepos/bisos-pip/*=); its *rules* say what every member
+repo must have. The engine reports, per repo and rule, a status with the action it implies; a
+separate update applies only the safe actions.
+
+Decided (user, 2026-11-15; overview Stage 5): general for any gitGroup; the engine here; each
+gitGroup's rules declared in its overview repo; =py3/README.rst= / =py3/_description.org= ignored and
+untracked; the =pipPkgsStatus= pattern (bisos.pycs) of read-only status, then explicit action.
+
+Design proposal (7.1 settles it):
+- *A new seed family*, csSeed's triple: =gitGroup_seed.py= (atexit -> =gitGroup-seed.cs=),
+  =gitGroup_seedInfo.py= (singleton; =setup(base=..., exclude=[...], rules=[...])=), =gitGroup_csu.py=
+  (the Cmnds and rule logic), =py3/bin/gitGroup-seed.cs=.
+- *The plant* lives in the gitGroup's overview repo as =py3/bin/<gitGroup>_gitGroup.pcs= (bisos-pip:
+  =bisos-pip/overview/py3/bin/bisos-pip_gitGroup.pcs=; the prefix keeps the plants of different
+  gitGroups apart): names the base, any members to leave out, and the rules. Used as
+  =bisos-pip_gitGroup.pcs -i gitGroup_status=, then =-i gitGroup_update=. The overview repo gets a
+  =py3/bin/= but no =setup.py=: it stays a non-package (not installed, not on PATH).
+- *Members*: the children of base that are git repos, minus =exclude=.
+- *Rule factories* (as =pkgsSeed.pipPkg=):
+  - =fileFromTemplate(path, template)= --- the repo's =path= equals =template=. Statuses: =ok=,
+    =missing= (safe: add), =stale= (an exact copy of an earlier version of the template, found
+    through the template's git history in its own repo: safe to replace), =custom= (differs from
+    every version: show the diff; the user decides).
+  - =notTracked(paths)= --- these are not tracked. Status =tracked= (action: =git rm --cached=,
+    printed, not run: staging is the user's).
+  - Later: =exists(path)=, the AI-Activity layout (current / old / none), =LICENSE=, =README.org=.
+- *Cmnds*: =gitGroup_members=; =gitGroup_status [repo ...]= (read-only: a table of repo x rule, then
+  counts); =gitGroup_diff <repo> <rule>= (for =custom=); =gitGroup_update [repo ...]= (writes only
+  =missing= and =stale= files into the working tree; never stages or commits; prints the =git rm
+  --cached= lines for =tracked=).
+- The modern counterpart, for a gitGroup, of =bx-gitRepos -i baseUpdateDotIgnore= /
+  =baseVerifyDotIgnore= (which stay).
+- Known state to test against (overview 5.1's survey): of 76 repos, =.gitignore= 1 current, 10 stale,
+  44 one shared older copy, ~5 unique, 16 missing; =.gitattributes= 59 ok, 17 missing; 57 track
+  =py3/README.rst=.
+
+** +
+** TODO [#A] <<7.1>> Settle the design (names, plant, rules, statuses) :aiAndMe:
+:PROPERTIES:
+:ORIGIN: Mohsen
+:IMPORTANCE: High
+:REPO: this
+:BASE: this
+:FOUND: <2026-11-15 Sun>
+:END:
+Agreed so far (user, 2026-11-15): =bx-gitRepos= stays; the plant is
+=<gitGroup>_gitGroup.pcs= in the overview repo's =py3/bin/=.
+Review the rest of the proposal above: the seed family and its names, member selection,
+the two first rule factories, the statuses and which are safe, and that update never stages. Open:
+whether the 44 shared copies (an older template, not in the =defaults= history) count as =stale= ---
+e.g. a rule option listing extra known-old versions.
+----- Results: ------
+2026-11-15 --- Settled with the user:
+- =bx-gitRepos= stays; the plant is =<gitGroup>_gitGroup.pcs= in the overview repo's =py3/bin/=.
+- Names as proposed: =gitGroup_seed.py=, =gitGroup_seedInfo.py=, =gitGroup_csu.py=, =gitGroup-seed.cs=;
+  Cmnds =gitGroup_*=. Members: the git repos under base, minus =exclude= (none for bisos-pip, so
+  =overview= and =profile= are members).
+- *One source per file*: a bisos repo's root =.gitignore= is the template =bx-gitRepos= copies
+  (=/bisos/apps/defaults/begin/templates/moded/git/gitignore/emacs+py+tex=), =.gitattributes= is
+  =gitattributes/py=. The user knows of nothing in bisos-pip that needs to differ.
+- *Statuses* of =fileFromTemplate=: =ok=; =missing= (update adds); =stale= (an exact earlier template
+  version, from its git history; update replaces); =drift= (differs, not declared; update replaces
+  only with =--replaceDrift=, after =gitGroup_diff=); =custom= (differs and declared in the plant's
+  =customRepos=; never touched --- the concept stays, rare in practice; empty for bisos-pip). So no
+  =knownOld= list: the 44 shared old copies and the ~5 unique ones are =drift=.
+- =notTracked= reports =tracked=; update prints the =git rm --cached= lines, never runs them. Update
+  never stages or commits.
+- First rules: root files only; =py3/.gitignore= / =py3/.gitattributes= decided after the first run.
+- Claude may: create scratch repos in the scratchpad, reinstall gitist editable into dev-bisos3, and
+  run =gitGroup_status= (read-only) on the real bisos-pip. =gitGroup_update= on real repos waits for
+  7.4.
+** TODO [#A] <<7.2>> Build the engine: seed triple, rule factories, Cmnds :ai:
+:PROPERTIES:
+:ORIGIN: Mohsen
+:IMPORTANCE: High
+:REPO: this
+:BASE: this
+:FOUND: <2026-11-15 Sun>
+:END:
+After 7.1. Files as designed; =gitGroup-seed.cs= generated in the house style; read-only Cmnds first.
+Test on a scratch gitGroup (a few throwaway repos) before bisos-pip; then the =setup.py= scripts list
+(=pypiProc.sh=) and an editable reinstall (=pipPkgsStatus.cs -i pkgLocalStatus= says when).
+----- Results: ------
+2026-11-15 --- Done (user to commit); not marked DONE.
+
+*Files* (=py3/=; headers derived from gitist's own =gitist_seed.py=, =gitist_csu.py=, =gitist-seed.cs=):
+- =bisos/gitist/gitGroup_seed.py= --- the atexit hook: =seedsLib.plantWithWhich('gitGroup-seed.cs')=.
+- =bisos/gitist/gitGroup_seedInfo.py= --- =FileFromTemplate= / =NotTracked= rules and their factories
+  =fileFromTemplate(path, template, customRepos=[], name=path)=, =notTracked(paths, name)=; singleton
+  =gitGroupSeedInfo=; =setup(gitGroupName, base, rules, exclude=None, examplesFuncsList=None)=.
+- =bisos/gitist/gitGroup_csu.py= --- =members()=; =templateVersions(template)= (the template resolved
+  through symlinks, its current content, and a sha256 per earlier version from =git log= / =git show=
+  in its own repo; cached); =checkRule()=; =statusAll()=; =summary()=; =fileDiff()=; =update()=.
+  Cmnds =gitGroup_members=, =gitGroup_status [repo ...]=, =gitGroup_diff <repo> <rule>=,
+  =gitGroup_update [--replaceDrift=true] [repo ...]=; =examples_csu= (built from the plant's
+  declaration: its members, a first repo and file rule for the examples, the rules). Param
+  =replaceDrift= in =commonParamsSpecify=.
+- =bin/gitGroup-seed.cs= --- csuList =csxuFps_csu=, =gitGroup_csu=, =plantedCsu=; its =examples= runs
+  =gitGroup_csu.examples_csu= and the plant's =examplesFuncsList=.
+- =setup.py= regenerated (=scripts= gained =bin/gitGroup-seed.cs=); reinstalled editable into
+  dev-bisos3 (=pipPkgsStatus.cs -i pkgLocalStatus= said =regenerate=, then =ok=; the seed is on PATH).
+
+*Tested on a scratch gitGroup* (scratchpad =gg1/=: =rOk=, =rMissing=, =rStale= (the 2026-07-12
+template, and a force-tracked =py3/README.rst=), =rDrift=, =rCustom= (declared), =rExcluded=, and a
+non-repo directory):
+- =gitGroup_members=: the five, without =rExcluded= and the non-repo.
+- =gitGroup_status=: every status as intended (stale shows "template as of 948f09f 2026-07-12").
+- =gitGroup_diff rDrift .gitignore=: the added line.
+- =gitGroup_update=: wrote missing and stale only, printed the =git rm --cached= line; then
+  =--replaceDrift=true= replaced the drift; =custom= untouched; the index unchanged (nothing staged).
+- Errors: an unknown member, an unknown rule, and the seed run without a plant fail cleanly.
+
+*Read-only on the real bisos-pip* (a trial plant in the scratchpad, =gg2/bisos-pip_gitGroup.pcs=, with
+7.3's rules; 0.7 s): "76 members --- .gitignore: drift 49, missing 16, stale 10 --- .gitattributes:
+missing 17 --- generated: tracked 57" --- the hand survey's numbers (1 ok, 10 stale, 44 + ~5 drift).
+Nothing was written.
+
+*Not done:* the real plant (7.3); no unit tests (the scratch gitGroup is the test, by hand); the
+=f"""= cmndDocStr and duplicated =collections= import pyflakes notes are the house idiom.
+** TODO [#A] <<7.3>> bisos-pip's plant: =bisos-pip/overview/py3/bin/bisos-pip_gitGroup.pcs= :aiAndMe:
+:PROPERTIES:
+:ORIGIN: Mohsen
+:IMPORTANCE: High
+:REPO: /bisos/git/bxRepos/bisos-pip/overview
+:BASE: this
+:FOUND: <2026-11-15 Sun>
+:END:
+Overview WorkPlan 5.2. First rules: root =.gitignore= = =gitignore/emacs+py+tex=, root =.gitattributes=
+= =gitattributes/py=, =notTracked= of =py3/README.rst= and =py3/_description.org=.
+----- Results: ------
+2026-11-15 --- Done (user to commit in overview); not marked DONE. The plant is
+=/bisos/git/bxRepos/bisos-pip/overview/py3/bin/bisos-pip_gitGroup.pcs= (new =py3/bin/=; no =setup.py=):
+=gitGroupName="bisos-pip"=, =base="/bisos/git/bxRepos/bisos-pip"=, no exclude, the three rules above,
+no =customRepos=. Run from there: its examples list 76 members; =gitGroup_status= gives the 7.2 numbers
+(drift 49, missing 16, stale 10; =.gitattributes= missing 17; tracked 57); =gitGroup_status overview=:
+the overview repo itself is a member, its =.gitignore= drift. Nothing written.
+** TODO [#B] <<7.4>> Run it on bisos-pip; apply the safe actions :aiAndMe:
+:PROPERTIES:
+:ORIGIN: Mohsen
+:IMPORTANCE: Medium
+:REPO: /bisos/git/bxRepos/bisos-pip/*
+:BASE: this
+:FOUND: <2026-11-15 Sun>
+:END:
+=gitGroup_status=, review the =custom= ones with =gitGroup_diff=, =gitGroup_update=; the user stages and
+commits per repo (with overview 5.3's =git rm --cached=). Compare with the survey above.
+----- Results: ------
+2026-11-15 --- Claude's part done (the plant on PATH since overview 5.5); the user's part pending.
+- =bisos-pip_gitGroup.pcs -i gitGroup_status= before: =.gitignore= drift 49, missing 16, stale 10;
+  =.gitattributes= missing 17; generated tracked 57.
+- The 5 unique drifted =.gitignore= files reviewed first (=gitGroup_diff=): their extra lines were
+  =*_archive= (dropped by the template on purpose), =lib/= (no such directory), =.aider*= (no such
+  files anywhere), =__pycache__= (in the template), the generated files (in the template). Nothing lost.
+- =-i gitGroup_update=: 43 files written (16 + 10 + 17), 57 =git rm --cached= lines printed.
+- =-i gitGroup_update --replaceDrift=true=: the 49 drifted =.gitignore= written.
+- =-i gitGroup_status= after: =.gitignore= all ok, =.gitattributes= all ok, generated tracked 57.
+  75 repos have changed dot files (one already matched).
+- The 57 untrack commands are in the session scratchpad, =gitGroup-untrack.sh= (one
+  =git -C <repo> rm --cached py3/README.rst py3/_description.org= per repo).
+- Other uncommitted changes in those repos: mostly the generated =README.rst= (52) and
+  =_description.org= (31), which leave =git status= once untracked; =py3/setup.py= regenerated by the
+  reinstalls in 13 repos (airflow capSpecs csPlayer dnsCap examples gitist kafka lcnt overview pals
+  pycs qmail webCap); this session's work in gitist, overview, pycs; sbom and virsh track build output
+  (=py3/*.egg-info=, =py3/dist/*.tar.gz=) --- a candidate =notTracked= rule.
+*Pending (user):* run the untrack lines, commit per repo, push.
+** TODO [#C] <<7.5>> README.org and the Blee panel describe the gitGroup commands :ai:
+:PROPERTIES:
+:ORIGIN: Mohsen
+:IMPORTANCE: Low
+:REPO: this
+:BASE: this
+:FOUND: <2026-11-15 Sun>
+:END:
+Also correct the panel's Overview (it says "bisos.webCap" and links facter's README) and
+AI-DevStatus.org's old file names.
+----- Results: ------
+** TODO [#A] <<7.6>> =gitGroup_cachedListUpdate=: the repos list for Blee's Magit menus :aiAndMe:
+:PROPERTIES:
+:ORIGIN: Mohsen
+:IMPORTANCE: High
+:REPO: this
+:BASE: this
+:FOUND: <2026-11-15 Sun>
+:END:
+The modern counterpart of =bx-gitRepos -i cachedLs= (=/bisos/var/core/cached/bxReposList.auth=), per
+gitGroup: =/bisos/var/gitGroup/<gitGroup>/cachedList.<vcMode>=, from the plant (members and exclude),
+the base repo included (user, 2026-11-15).
+----- Results: ------
+2026-11-15 --- Done (user to commit); not marked DONE.
+- Found: =bx-gitRepos -i cachedLs= no longer reads its cache (the reading version is =%%=-disabled); it
+  and Blee's "All BaseDir Repos" run =bx-gitReposBases --pbdName=bxReposRoot -i pbdVerify all=, whose
+  list is the hand-kept =gitClone(...)= entries of bisos.common's =baseDirBxRepos.py=. That list had
+  67 bisos-pip repos of the 76 on disk (missing gitist, vscodeClaude and nine CBM packages) and had
+  cached an error line as a path (=bootstrap/dev/bisos/bootstrap-vagrants Missing -- Un-Expected=).
+- =gitGroup_csu.py=: =cachedListsBase= (=/bisos/var/gitGroup=), =vcModeOf()= (=auth= / =anon= from the
+  real path, else =other=), =cachedListPath()=, =cachedListLines()= (the base repo when it is one, then
+  the members; real paths), =cachedListWrite()= (a temporary file renamed into place). Cmnds
+  =gitGroup_cachedListUpdate= and =gitGroup_cachedList= (prints; writes first if absent); examples.
+- Tested: =bisos-pip_gitGroup.pcs -i gitGroup_cachedListUpdate= -> =/bisos/var/gitGroup/bisos-pip/
+  cachedList.auth=, 77 repos (=bisos-pip= itself, then the 76 members). The scratch gitGroup wrote
+  =cachedList.other= (not under auth/anon) --- removed after the test, so the menu does not list it.
+** TODO [#A] <<7.7>> Blee's Magit menu: one item per gitGroup cached list :aiAndMe:
+:PROPERTIES:
+:ORIGIN: Mohsen
+:IMPORTANCE: High
+:REPO: /bisos/git/bxRepos/blee/env3
+:BASE: this
+:FOUND: <2026-11-15 Sun>
+:END:
+Apps -> GitHub MAGIT Menu gains "BISOS-Magit gitGroups": an item per gitGroup in =/bisos/var/gitGroup=,
+and "All gitGroups". The existing three items stay.
+----- Results: ------
+2026-11-15 --- Done in =blee/env3= (user to commit there; env3 has no AI-Activity: this is its record).
+- =plus/bcpg:magitPlus.el=: =bap:magit:gitGroup:cachedListsBase=; =bap:magit:gitGroup/cachedLists=
+  (=((gitGroup . file) ...)=, auth before anon before other); =bap:magit:gitGroup/list= (reads the
+  file: no shell command); =bap:magit:gitGroup/visit= (interactive, completes on gitGroups);
+  =bap:magit:gitGroup:all/visit=. Both visits go through =bap:magit:magit-repository-directories/
+  set-with-list= and =magit-list-repositories=, as the existing items do.
+- =legacy/apps-magit-menu.el=: =apps:magit:menuItem:gitGroups|define= (a submenu with =:filter=, so its
+  items are computed when it is opened --- not on =menu-bar-update-hook=, which the file avoids) and
+  =apps:magit:gitGroups|menuFilter=; added to the GitHub MAGIT menu after the three BaseDir items.
+- Tested in the running Blee (both files loaded with =load-file=; they only define): the cached lists
+  =(("bisos-pip" . ".../cachedList.auth"))=; the list: 77 repos; the filter's items; an unknown
+  gitGroup and an absent base give their messages. The menu itself appears after an Emacs restart
+  (the GitHub MAGIT menu is built once at startup); =M-x bap:magit:gitGroup/visit= works now.
+** TODO [#A] <<7.8>> =.spcs= plants: gitGroup name and base from where the plant lives :aiAndMe:
+:PROPERTIES:
+:ORIGIN: Mohsen
+:IMPORTANCE: High
+:REPO: this
+:BASE: this
+:FOUND: <2026-11-15 Sun>
+:END:
+For overviews that are not packages (blee/overview WorkPlan Stage 2): the plant, on PATH through a
+symlink in =/bisos/core/bsip/bin=, declares only its rules.
+----- Results: ------
+2026-11-15 --- Done (user to commit); not marked DONE.
+- =gitGroup_seedInfo.setup(rules, gitGroupName=None, base=None, exclude=None, examplesFuncsList=None)=:
+  =rules= first; name and base optional.
+- =gitGroup_csu.plantOverviewRepo()=: the nearest ancestor with =.git= of the plant's *resolved* path
+  (=seedsLib.seededCsxuInfo.plantOfThisSeed= is =argv[0]=, the PATH symlink). Resolving is deliberate
+  and the opposite of bisos.capability's CBM leaves (=resolveCbsSpec()=, fixed 2026-10-19 not to
+  resolve): a CBM leaf's parameters come from where its symlink is planted, a gitGroup plant's from
+  where the file lives. Documented in the docstring.
+- =_info()=: when the plant gave no base, base = that repo's parent, name = base's name;
+  =examples_csu= goes through =_info()= (a =.spcs= plant has no base until then) and, without a
+  plant, names both kinds.
+- Tested: =blee_gitGroup.spcs= from its place and through the bsip4 symlink on PATH (=blee=, 40 members);
+  =bisos-pip_gitGroup.pcs= unchanged; the seed alone gives the "run through a plant" menu.
+** TODO [#A] <<7.9>> From =overview= to =base= (DESIGN.org, "Migration Towards gitist") :aiAndMe:
+:PROPERTIES:
+:ORIGIN: Mohsen
+:IMPORTANCE: High
+:REPO: this
+:BASE: this
+:FOUND: <2026-11-15 Sun>
+:END:
+The gitGroup's plant lives in its =base= repo; =overview= is retired. No GitHub renames: the files
+move into the existing =base= repos (=bisos-pip/base=, =blee/base=), then the =overview= repos are
+deleted. A gitGroup directory gets =gitGroup= -> =.github= (a symlink). No packaging for base: the
+plants are =.spcs=, on PATH through bsip4 (user, 2026-11-15).
+----- Results: ------
+2026-11-15 --- Claude's part done (user to commit); not marked DONE. Recorded in detail in
+bisos-pip/base WorkPlan 6.1 and blee/base WorkPlan 3.1; the user's part in 6.2 and 3.2.
+- Here: =gitGroup_csu.plantOverviewRepo()= -> =plantBaseRepo()=. The gitGroup's directory is now
+  =gitGroupDir= (was =base=, which now names the repo): =GitGroupSeedInfo.gitGroupDir=,
+  =setup(..., gitGroupDir=None, ...)=. =members()= leaves out symlinks (=gitGroup= -> =.github= would be
+  counted twice). Texts (seed's =csInfo=, docstrings, the plantless examples) name =base= and =.spcs=.
+  No =setup.py= change (no script added); gitist is editable, so live.
+- Both base repos: overview's files moved in (base's own fto files kept); bisos-pip's plant became
+  =bisos-pip_gitGroup.spcs= (rules only), =bisos.overview= dropped and uninstalled; bsip4 symlinks
+  for both plants point at =base=.
+- Tested through PATH: =bisos-pip_gitGroup.spcs= (=bisos-pip=, 77 members: =.gitignore= and
+  =.gitattributes= all ok, generated tracked 57) and =blee_gitGroup.spcs= (=blee=, 41: custom 1, drift
+  7); both find their gitGroup from =base=; the seed alone names the =base= plants; cached lists
+  rewritten (78 and 42 lines: the gitGroup directory is still a repo, and =overview= still a member,
+  until 6.2 / 3.2).
+- Found: both gitGroup directories are git repos themselves --- =bisos-pip= a clone of
+  =bisos-pip/.github=, =blee= a second clone of =bx-blee/base= --- the "renamed to be the base repo"
+  DESIGN.org calls not useful. Undoing that is the user's (6.2 / 3.2): it removes a =.git=.
+** -
 
 * Stage 8 TODOs --- bisos-pip/bases Replacement
 
