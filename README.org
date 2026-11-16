@@ -15,84 +15,206 @@
 
 * Overview
 
-/bisos.gitist/ provides general facilities for mass cloning of public github and gitlab
-and also private gitlab instances.
+/bisos.gitist/ is git + ist, as in artist: its scope is all things git in BISOS. It has two roles:
 
-bisos.gitist is a python package that uses the  [[https://github.com/bisos-pip/pycs][PyCS-Framework]].
+1. *Bootstrapper*: cloning sets of repos onto a new platform --- mass cloning from GitHub and GitLab
+   (public, and private through credentials).
+2. *Maintainer*: keeping cloned repos consistent and at hand during development --- the gitGroup
+   engine (rules every repo of a gitGroup follows) and the lists Blee's Magit menus use.
 
-gitist.cs is a seed. Common usages of gitist take the form of a gitistProc.pcs.
+Where gitist is headed (a registry of gitGroups replacing bisos.common's, and its merge into the
+=-sbom.pcs= model) is in [[file:DESIGN.org][DESIGN.org]]. This README holds what is settled.
 
-
+bisos.gitist is a python package that uses the [[https://github.com/bisos-pip/pycs][PyCS-Framework]].
 
 * Table of Contents     :TOC:
 - [[#overview][Overview]]
+- [[#part-of-bisos--bystar-internet-services-operating-system][Part of BISOS — ByStar Internet Services Operating System]]
 - [[#gitist-model-abstractions-and-terminology][Gitist Model, Abstractions and Terminology]]
+  - [[#repo][Repo]]
+  - [[#gitgroup][gitGroup]]
+  - [[#the-gitgroup-directory][The gitGroup Directory]]
+  - [[#gitgroup-plant-rules-and-statuses][gitGroup Plant, Rules and Statuses]]
+  - [[#gitgroupsset-and-gitgroupssetserver][gitGroupsSet and gitGroupsSetServer]]
+  - [[#gitgroup-repos-profile][gitGroup-Repos-Profile]]
+  - [[#anon-and-auth][anon and auth]]
 - [[#gitist-layers][Gitist Layers]]
+- [[#the-facilities][The Facilities]]
+  - [[#mass-cloning-gitist-seedcs][Mass Cloning: gitist-seed.cs]]
+  - [[#gitgroup-consistency-gitgroup-seedcs][gitGroup Consistency: gitGroup-seed.cs]]
 - [[#post-installation-setup][Post-Installation Setup]]
 - [[#installation][Installation]]
   - [[#installation-with-pip][Installation With pip]]
   - [[#installation-with-pipx][Installation With pipx]]
-- [[#usage][Usage]]
-  - [[#local-usage-system-command-line][Local Usage (system command-line)]]
 - [[#documentation-and-blee-panels][Documentation and Blee-Panels]]
-  - [[#bisosgitist-blee-panels][bisos.gitist Blee-Panels]]
 - [[#support][Support]]
-- [[#planned-improvements][Planned Improvements]]
+
+* Part of BISOS — ByStar Internet Services Operating System
+
+Layered on top of Debian, *BISOS* (By* Internet Services Operating System)
+is a unified and universal framework for developing both internet services and
+software-service continuums that use internet services. See
+[[https://github.com/bxGenesis/start][Bootstrapping ByStar, BISOS and Blee]]
+for information about getting started with BISOS.
+
+*BISOS* is a foundation for *The Libre-Halaal ByStar Digital Ecosystem* which
+is described as a cure for losses of autonomy and privacy in a book titled:
+[[https://github.com/bxplpc/120033][Nature of Polyexistentials]]
+
+/bisos.gitist/ is part of BISOS. It is a standalone package that can be used independently of the
+full BISOS environment.
 
 * Gitist Model, Abstractions and Terminology
 
-- A *Repo*: A BISOS gitist repo, is just that, a repo. There are no issues, no projects etc that github and
-  gitlab have combined with a repo.
-- A *<<gitGroup>>*: A collection of co-anchored set of repos. Github calls then "organization". Gitlab calls them
-  "group" and "subGroup".
-  Each gitGroup has two special repos: "gitGroup" and "base".
-  -- For github gitGroup is a symlink to the .github repo.
-  -- The base repo keeps utilities specific to the gitGroup.
-- *<<gitGroup-Repos-Profile>>* : A labeling mechanism to create sub-sets of repos of a [[gitGroup]]
-  Sub-sets of the repos within a gitGroup can be addressed by labels.
--  *<<gitGroupsSet>>*: Named list of gitGroups. For example gitGroupsSet-rawBisos, includes:
-  ["bisos-pip", "blee", "bxObjects"].
-  and their canonical base at /bisos/git
-  Each named gitGroupsSet includes the following:
-  - A list of gitGroups
-  - Pointer to a [[gitGroupsSetServer]]
-  A named gitGroupsSet is typically kept in a top level repo.
-- *<<gitGroupsSetServer>>* : Information related to the git server that holds the named [[gitGroupsSet]] repos.
-  This info include:
-  - type of gitGroupsSetServer (github, gitlab)
-  - Reference to credentials for the gitSerevr
-  - Base address for the gitGroupsSetServer
+** Repo
+
+A BISOS gitist *Repo* is just that, a git repo. Issues, projects, wikis and the rest that GitHub and
+GitLab combine with a repo are not part of the model.
+
+** gitGroup
+
+A *<<gitGroup>>* is a co-anchored set of repos, independent of the git server that hosts them.
+GitHub calls it an "organization"; GitLab a "group" (and "subgroup"). Examples: =bisos-pip= (the
+BISOS pip packages), =blee= (on GitHub the =bx-blee= organization), =bxObjects=.
+
+A gitGroup's local name and its name on the server may differ (=blee= <- =bx-blee=).
+
+Each gitGroup has two special repos:
+- *<<base repo>>* (=base=) --- keeps what is specific to the gitGroup: its plant
+  (=py3/bin/<gitGroup>_gitGroup.spcs=), and the fto files that make the gitGroup directory walkable.
+- *gitGroup* --- a symlink to the =.github= repo (on GitHub, the organization's profile). A server
+  without =.github= repos (GitLab) gets a repo of that role.
+
+** The gitGroup Directory
+
+On a platform a gitGroup is a directory, =/bisos/git/bxRepos/<gitGroup>/=, holding its repos:
+
+#+begin_example
+/bisos/git/bxRepos/bisos-pip/
+├── base/           the base repo
+├── .github/        the .github repo
+├── gitGroup -> .github
+├── aiActivity/     ... every other member repo
+└── ...
+#+end_example
+
+The gitGroup directory is a plain directory. (Platforms installed before this layout have the
+directory itself cloned from a repo --- =bisos-pip= from =.github=, =blee= from =bx-blee/base=; see
+DESIGN.org.) The *members* of a gitGroup are the git repos directly in its directory; symlinks such
+as =gitGroup= are not members.
+
+** gitGroup Plant, Rules and Statuses
+
+A gitGroup's *plant*, =<gitGroup>_gitGroup.spcs= in its base repo's =py3/bin/=, is spread-planted on
+=gitGroup-seed.cs=. It declares only the gitGroup's *rules*; its name and directory come from where
+the file really lives (the base repo's parent). It is put on PATH by a symlink in
+=/bisos/core/bsip/bin/= (the symlink is resolved).
+
+Two kinds of rules:
+- =fileFromTemplate(path, template, customRepos=[...])= --- every member's =path= equals =template=.
+- =notTracked(paths)= --- none of =paths= is tracked (generated files).
+
+Each member, against each rule, has a *status*:
+
+| Status  | Meaning                                                | gitGroup_update        |
+|---------+--------------------------------------------------------+------------------------|
+| =ok=      | as the rule says                                       | nothing                |
+| =missing= | the file is absent                                     | writes it              |
+| =stale=   | an exact earlier version of the template (git history) | writes it              |
+| =drift=   | differs from every template version, not declared      | with =--replaceDrift=    |
+| =custom=  | differs, declared in the plant's =customRepos=           | never                  |
+| =tracked= | a =notTracked= path is tracked                           | prints =git rm --cached= |
+
+Status is read-only; update writes files only and never stages or commits.
+
+A gitGroup's *cached list*, =/bisos/var/gitGroup/<gitGroup>/cachedList.<auth|anon|other>=, holds the
+real paths of its repos. Blee's "Apps -> GitHub MAGIT Menu -> BISOS-Magit gitGroups" reads it.
+
+** gitGroupsSet and gitGroupsSetServer
+
+A *<<gitGroupsSet>>* is a named list of gitGroups with a canonical base: for example the set of a
+Raw-BISOS platform, =bisos-pip=, =blee=, =bxObjects=, ... under =/bisos/git=. For each gitGroup it
+holds its local name and its name on the server, and its *membership*: the repos a platform clones.
+
+- Membership is an *explicit list* in the set. Installing clones that list, with no use of the
+  server's API: predictable, and not subject to API rate limits.
+- Keeping the list current is a developer's read-only step: compare each list with the server and
+  report the repos new on the server, the listed repos gone from it, and those skipped by exclusion
+  patterns (=*.moved=, =defunc-*=, =*.obsolete=, archived); then update the list explicitly.
+- The full set is kept in a repo of its own in the =ByStar= organization (the top-most level).
+
+A *<<gitGroupsSetServer>>* is what a gitGroupsSet needs about the git server holding its repos: its
+type (github, gitlab), its base address, and a reference to its credentials.
+
+** gitGroup-Repos-Profile
+
+A *<<gitGroup-Repos-Profile>>* is a labeling mechanism: subsets of a [[gitGroup]]'s repos addressed
+by labels.
+
+** anon and auth
+
+A platform clones its repos anonymously (https) into =/bisos/git/anon/bxRepos=; a developer platform
+clones them again, authenticated (ssh, with a host alias), into =/bisos/git/auth/bxRepos=. The
+symlink =/bisos/git/bxRepos= says which is in use. gitist reads it to choose the mode and the
+destination, and the cached list is named after it.
 
 * Gitist Layers
 
 1) PyCS Framework
-2) Seeded/Planted PyCS Framework (gitist.cs)
+2) Seeded/Planted PyCS Framework (=gitist-seed.cs=, =gitGroup-seed.cs=)
 3) Common csCmndsList (bisos.csSeed)
-4) Gitist Commands CSUs
+4) Gitist Commands CSUs (=gitist_csu.py=, =gitGroup_csu.py=)
 
+* The Facilities
+
+** Mass Cloning: gitist-seed.cs
+
+Brand-neutral commands (GitHub through PyGithub, GitLab through python-gitlab) over a thin brand
+adapter. A plant names the brand, the credentials and the access type:
+=py3/bin/pub-{anon,auth}-{github,gitlab}-gitist.pcs=.
+
+#+begin_src bash
+pub-anon-github-gitist.pcs -i gitist_reposList bisos-pip                        # the org's repos
+pub-anon-github-gitist.pcs -i gitist_clone --destBaseDir=/tmp/x bisos-pip/gitist   # one repo
+pub-anon-github-gitist.pcs -i gitist_reposClone --destBaseDir=/tmp/x bisos-pip     # all of them
+#+end_src
+
+Access: =anon= clones over https; =auth= over ssh (with a =~/.ssh/config= host alias), or https with
+a token. Existing clones are skipped. A plant can also run a list of these commands
+(=csCmndsList=): =/bisos/core/bsip/bin/bxRepos-gitist.pcs= is the list of repos a Raw-BISOS install
+clones beyond bisos.common's registry.
+
+** gitGroup Consistency: gitGroup-seed.cs
+
+Run through a gitGroup's plant:
+
+#+begin_src bash
+bisos-pip_gitGroup.spcs -i gitGroup_members                     # the member repos
+bisos-pip_gitGroup.spcs -i gitGroup_status                      # read-only: each member, each rule
+bisos-pip_gitGroup.spcs -i gitGroup_diff <repo> .gitignore      # template -> the member's file
+bisos-pip_gitGroup.spcs -i gitGroup_update                      # writes missing and stale files
+bisos-pip_gitGroup.spcs -i gitGroup_update --replaceDrift=true  # and drifted ones
+bisos-pip_gitGroup.spcs -i gitGroup_cachedListUpdate            # the list for Blee's Magit menus
+#+end_src
+
+Plants today: =bisos-pip/base/py3/bin/bisos-pip_gitGroup.spcs=, =blee/base/py3/bin/blee_gitGroup.spcs=.
+=bx-gitRepos= (=/bisos/core/bsip/bin=) stays beside this.
 
 * Post-Installation Setup
 
-After installing, run the provisioning script to create the credentials directory
-and place the configuration templates:
+For authenticated access, run the provisioning script to create the credentials directory and
+place the configuration templates:
 
 #+begin_src bash
 config/provision.pcs -i credsSetup
 #+end_src
 
-This creates =~/credentials/git/= and copies two config files there if they do
-not already exist:
+This creates =~/credentials/git/= and copies two config files there if they do not already exist:
 
-- =~/credentials/git/githubHosts.cfg= — GitHub configuration; insert your GitHub PAT (Personal Access Token) here.
+- =~/credentials/git/githubHosts.cfg= — GitHub configuration; insert your GitHub PAT here.
 - =~/credentials/git/gitlabHosts.cfg= — GitLab configuration; insert your GitLab PAT here.
 
-Once the PATs are in place, you can run the gitist proc scripts, e.g.:
-
-#+begin_src bash
-bin/github-pub-gitist.pcs
-bin/gitlab-pub-gitist.pcs
-#+end_src
-
+Anonymous access to public repos needs neither.
 
 * Installation
 
@@ -120,18 +242,6 @@ If you only need access to bisos.gitist on command-line, you can install it with
 pipx install bisos.gitist
 #+end_src
 
-* Usage
-
-** Local Usage (system command-line)
-
-=gitist.cs= does the equivalent of gitist.
-
-#+begin_src bash
-bin/gitist.cs
-bin/gitistProc.pcs
-#+end_src
-
-
 * Documentation and Blee-Panels
 
 bisos.gitist is part of ByStar Digital Ecosystem [[http://www.by-star.net]].
@@ -139,13 +249,8 @@ bisos.gitist is part of ByStar Digital Ecosystem [[http://www.by-star.net]].
 This module's primary documentation is in the form of Blee-Panels.
 Additional information is also available in: [[http://www.by-star.net/PLPC/180047]]
 
-** bisos.gitist Blee-Panels
-
-bisos.gitist Blee-Panles are in ./panels directory.
-From within Blee and BISOS these panles are accessible under the
-Blee "Panels" menu.
-
-See [[file:./py3/panels/_nodeBase_/fullUsagePanel-en.org]] for a starting point.
+bisos.gitist's Blee-Panel is [[file:./py3/panels/bisos.gitist/_nodeBase_/fullUsagePanel-en.org]].
+From within Blee and BISOS it is accessible under the Blee "Panels" menu.
 
 * Support
 
@@ -153,12 +258,6 @@ For support, criticism, comments and questions; please contact the
 author/maintainer\\
 [[http://mohsen.1.banan.byname.net][Mohsen Banan]] at:
 [[http://mohsen.1.banan.byname.net/contact]]
-
-
-* Planned Improvements
-
-- Enumerate applicabilities: telecom/SON, datacenter, CMIP-MOs
-- py3/bisos/gitist/tocsModule_csu.py
 
 # Local Variables:
 # eval: (setq-local toc-org-max-depth 4)

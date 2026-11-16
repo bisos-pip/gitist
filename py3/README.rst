@@ -2,6 +2,7 @@
 bisos.gitist: Git Mass Cloning and More
 =======================================
 
+
 .. contents::
    :depth: 3
 ..
@@ -136,7 +137,7 @@ bisos.gitist Blee-Panles are in ./panels directory. From within Blee and
 BISOS these panles are accessible under the Blee "Panels" menu.
 
 See
-`file:./panels/_nodeBase_/fullUsagePanel-en.org <./panels/_nodeBase_/fullUsagePanel-en.org>`__
+`file:./panels/\_nodeBase\_/fullUsagePanel-en.org <./panels/_nodeBase_/fullUsagePanel-en.org>`__
 for a starting point.
 
 Support

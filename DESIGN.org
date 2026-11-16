@@ -1,73 +1,262 @@
+#+title: bisos.gitist: Design and Direction
+#+DATE: <2026-11-15 Sun>
+#+AUTHOR: Mohsen BANAN
+#+OPTIONS: toc:4
 
 * About This Design Document
 
- This design document exists in combination with the following:
+This design document exists in combination with the following:
 
- - ./README.org : Which defines model and terminology
- - ./AI-Activity.org : Which assists with bisos-pip implementation of this design
- - ./AI-WorkPlan.org : Which drives the implementation of this design.
- - ./powerOfBisos.org : Some philosphical direction
+- [[file:README.org][README.org]] --- the model and terminology, and what is settled and built.
+- =AI-Activity.org= --- assists with the bisos-pip implementation of this design.
+- =AI-WorkPlan.org= --- drives the implementation of this design (Stages 7 and on).
+- [[file:powerOfBisos.org][powerOfBisos.org]] --- the philosophical direction: cumulative components
+  on one substrate.
 
- This design document functions as a direction statement.
- Not all of it will be implemented in one shot.
+It is a direction statement: not all of it is implemented in one shot. As parts are implemented
+they move to README.org, and leave a line in [[Decisions]].
 
-As the design is implemented, parts of this document should be moved to README.org
+* Table of Contents     :TOC:
+- [[#about-this-design-document][About This Design Document]]
+- [[#the-big-picture][The Big Picture]]
+  - [[#gitist-as-bootstrapper-and-maintainer][gitist as Bootstrapper and Maintainer]]
+  - [[#towards-the--sbompcs-model][Towards the -sbom.pcs Model]]
+- [[#the-raw-bisos-chain-today][The Raw-BISOS Chain Today]]
+  - [[#the-stages][The Stages]]
+  - [[#what-each-part-becomes][What Each Part Becomes]]
+- [[#the-order-of-things][The Order of Things]]
+- [[#step-details][Step Details]]
+  - [[#step-1-the-model][Step 1: The Model]]
+  - [[#step-2-gitist-as-the-repo-registry][Step 2: gitist as the Repo Registry]]
+  - [[#step-3-reposseed-in-sbom][Step 3: reposSeed in sbom]]
+  - [[#step-4-filesysseed-and-unix][Step 4: fileSysSeed and unix]]
+  - [[#step-5-retire-bx-bases-and-bisoscommons-pbds][Step 5: Retire bx-bases and bisos.common's pbds]]
+  - [[#step-6-collapse-the-stages][Step 6: Collapse the Stages]]
+  - [[#step-7-check-and-regression][Step 7: Check and Regression]]
+- [[#facilities-bootstrap-post-clone-or-both][Facilities: Bootstrap, Post-Clone or Both]]
+- [[#known-problems-now][Known Problems Now]]
+- [[#open-questions][Open Questions]]
+- [[#decisions][Decisions]]
 
-* Gitist both as a bootstrapper and a maintainer
+* The Big Picture
 
- There are two aspects to gitists 1) it is used for initial cloning
- 2) it is used for continous development (including integration with magit)
+** gitist as Bootstrapper and Maintainer
 
-* The Big Picture of Merging gitist with sbom.
+gitist has two aspects: (1) initial cloning, as part of bringing up a platform; (2) continuous
+development on a platform: pull, status, consistency across a gitGroup, integration with Magit.
 
-In the context of its initial cloning, gitist should be merged with sbom
-as well remaining independent. pycs _csu.py and .pcs framework allows for this.
+** Towards the -sbom.pcs Model
 
-The end goal is to cultivate the -sbom.pcs mode to approach the likes of Ansible Playbook.
+The end goal is to cultivate the =-sbom.pcs= model until it approaches the likes of an Ansible
+playbook: a platform described as plants of declarative, idempotent items, each with a check, composed
+by other plants --- and, being PyCS, runnable locally or remotely (RO) and documented in Blee.
 
-For this in addition to gitist and exisiting sbom facilities with need to also create
- a "fileSys" set of .pcs facilities for creation of directories, files, links, and permissions.
+bisos.sbom already has the package side (=pkgsSeed=: =aptPkg=, =pipPkg=, pipx, =npmPkg=, =sbomSpec=
+for composing sboms, an =_isInstalled= check per kind) and two empty placeholders for the rest,
+=fileSysSeed.py= and =reposSeed.py=. What is missing:
+- *repos* --- gitist, merged into sbom while remaining usable on its own (PyCS's =_csu.py= and plant
+  framework allow both);
+- *fileSys* --- directories, files, symlinks, ownership, modes, ACLs;
+- *unix* --- sudo execs and other commands.
 
- With these in place all the exisiting scripts in bisos-pip/common abd bisos-pip/bx-bases can be retired.
- All of those can become -sbom.pcs specs.
+With these, the scripts of =bisos-pip/common= (the pbds) and =bisos-pip/bx-bases= are retired: all of
+them become =-sbom.pcs= specs, and =raw-bisos.sh= shrinks to what must happen before Python.
 
-* Migration Towards gitist
+* The Raw-BISOS Chain Today
 
-** The base repo:
+Read 2026-11-15. The bootstrap model is documented in the Blee panel
+=blee-binders/bisos-core/bootstrap/bootstrapModel/= and in bxGenesis/start's AI-Activity.org ("The
+Chain"); this is the part that matters here.
 
-The <<base repo>> predates existance of .github repos. It was intended to be something similar.
-The gitGroup (for example bisos-pip) was renamed to be the [[base repo]] after having been cloned.
+** The Stages
 
-All of that proved not to be useful.
+| Stage | Program                    | Runs from                 | Repo                   |
+|-------+----------------------------+---------------------------+------------------------|
+|     0 | =raw-bisos.sh=               | =wget= from bxGenesis/start | bxGenesis/start        |
+|     1 | =provisionBisos.sh=          | pipx (=bisos.provision=)    | bisos-pip/provision    |
+|     2 | =bisosProvisioners.sh= & co. | =/opt/bisosProvisioner/...= | bxGenesis/provisioners |
+|     3 | =bsipProvision.sh=           | =/bisos/core/bsip/bin=      | bisos/bsip4            |
+|   CBM | =sysCbmManage.cs=            | =/bisos/core/bsip/bin=      | bisos-pip/capability   |
 
- We now should recognize a gitGroup by the existence of two mandatory directories. base and gitGroup.
+- *0* --- =raw-bisos.sh= is 1,494 lines, almost all Standalone-ICM boilerplate. Its work: sudoers,
+  apt sources, =emacs=, =pipx=, =pipx install bisos.provision=, then stage 1.
+- *1* --- apt sources again, =git=, clone =bxGenesis/provisioners= into =/opt/bisosProvisioner=.
+- *2* --- python for venvs; accounts (=bisosGroupAccount.sh=); =/var/bisos=, =/bisos=, =/bxo=, =/de=
+  with owner, mode 2775 and default ACLs; =git config= (=safe.directory=, =url.https://.insteadOf
+  git://=); then the pbds, with the pipx-installed =bx-bases= and =bx-gitReposBases=:
+  - =bisosRoot=, =bleeRoot=, =deRunRoot=, =bxoRoot= --- directories, symlinks, venv commands;
+  - =bxReposCollection=, =bxReposRoot= (203 =gitClone= / =gitCloneBase= lines, by GitHub org),
+    =extRepos= --- the first, anonymous clone.
+- *3* --- accounts, usage account bases, essentials, python system and venvs, virtualization; then
+  =sysBaseGeneralAugment=: currents, the platform and site BPOs, three sboms (=pyVenv-asc=,
+  =rawBisos=, =nvm=), =bxRepos-gitist.pcs= (repos missing from the registry), Chrome, Blee.
+- *CBM* --- capabilities over the raw platform (=fullyMaterialize=), absorbed separately.
 
- [[base repo]] will now be used to host the py3/bin/<name>_gitgroup.spcs -- This is now in the [[overview repo]]
- but will be relocated to [[base repo]]
+The pbds are already declarative: =pbdDict_bisosRoot= is a list of =directory()=, =symLink()=,
+=command()= entries; =pbdDict_bxReposRoot= of =gitClone()= / =gitCloneBase()=. They are written as
+Python modules of bisos.common, so every change is a PyPI release before a fresh chain sees it.
+=gitCloneBase= clones a gitGroup's base (or =.github=) repo *as* the gitGroup directory --- the
+layout README.org's gitGroup Directory replaces.
 
-** The overview repo:
+** What Each Part Becomes
 
-The <<overview repo>> predates existance of .github repos. It was intended to be something similar.
+| Today                                      | Becomes                                  | Step |
+|--------------------------------------------+------------------------------------------+------|
+| repo pbds (=baseDirBxRepos.py=)              | the gitGroupsSet, cloned by gitist       | 2, 3 |
+| =bxRepos-gitist.pcs=                         | the gitGroupsSet                         |    2 |
+| =gitCloneBase= (gitGroup directory = a repo) | plain directory, =base=, =.github=, =gitGroup= |    2 |
+| base-dir pbds (=baseDirBisos.py=)            | =fileSysSeed= sboms                        |    4 |
+| stage 2's dirs, perms, ACLs, git config    | =fileSysSeed= / =unix= sboms                 |    4 |
+| stage 2's accounts, python for venvs       | =unix= / =pkgsSeed= sboms                    | 4, 5 |
+| =bx-bases=, =bx-gitReposBases=, provisioners   | retired                                  |    5 |
+| stages 1 and 2                             | sboms run from =bisos.provision= (pipx)    |    6 |
+| stage 3's script steps                     | entries in the top sbom's =sbomsList=      |    6 |
+| =raw-bisos.sh=                               | sudoers, apt sources, pipx, one sbom     |    6 |
 
-Then yesterday we started using it to host the py3/bin/<name>_gitgroup.spcs -- This is now in the [[overview repo]]. Today I have decided that "overview" is not a good name for it and "base" is better. So, it will be relocated.
+* The Order of Things
 
-** The model of bisos.bx-bases and bisos.common is the old way of bootstrapping rawBisos
+Each step is useful on its own and leaves the chain working.
 
-That should all be replaced by the next generation of -sbom.pcs
+1. *The model* --- gitGroup, its directory layout, base, gitGroupsSet, membership, server. Done in
+   README.org (2026-11-15), except as the open questions below say.
+2. *gitist as the repo registry* --- a gitGroupsSet plant in a ByStar repo replaces
+   =baseDirBxRepos.py= and =bxRepos-gitist.pcs=; =gitistGroup.cs= clones, pulls and reports over
+   gitGroup directories. First, because that is where the pain is.
+3. *=reposSeed= in sbom* --- an sbom names gitGroupsSets; =sbom_fullUpdate= clones them through
+   gitist.
+4. *=fileSysSeed= and =unix=* --- the pbd vocabulary as seeds; the =bisosRoot= etc. pbds and stage 2's
+   setup become sboms.
+5. *Retire* =bx-bases=, bisos.common's pbds and bxGenesis/provisioners.
+6. *Collapse the stages* --- =raw-bisos.sh= does what must precede Python, installs =bisos.provision=
+   with pipx, and runs one sbom; everything else is composed by =sbomsList=.
+7. *Check and regression* --- "does this platform match the chain" is a read-only walk of the sboms;
+   regression on VMs (=bxObjects/bro_dockerfiles=). The CBM layer follows the raw chain, unchanged.
 
-* Purposes of gitist facilities
+* Step Details
 
-- Some gitist facilities are purely used for bootstrapping  (cloning)
-- Some gitist facilities can only be used after bootstrapping
-- Some gitist facilities include features that span both 
+** Step 1: The Model
 
-Each facility needs to identify the above
+Settled in README.org: Repo; gitGroup (local name vs. server name); the two special repos, =base= and
+=gitGroup= -> =.github=; the gitGroup directory as a plain directory; members; the gitGroup plant,
+rules and statuses; cached lists; gitGroupsSet with explicit membership; gitGroupsSetServer;
+gitGroup-Repos-Profile; anon and auth.
 
-** New facilities to be considered:
+** Step 2: gitist as the Repo Registry
 
-*** gitistGroup.cs  -- Mostly post clone -- Also used for cloning post bootstrap
- As arguments  and also on stdin it takes  gitGroup as base dirs
- For example:
+- *The gitGroupsSet plant* --- in a repo of its own in the =ByStar= organization. Per gitGroup: local
+  name, server name (=blee= <- =bx-blee=), its server, and the explicit list of member repos; per
+  set: the canonical base (=/bisos/git=).
+- *Membership* (decided, "C"): explicit lists when installing; "all but these" when editing. A
+  developer command (e.g. =gitGroupsSet_status=) compares each list with the server's API and
+  reports repos new on the server, listed repos gone from it, and those skipped by the exclusion
+  patterns (=*.moved=, =defunc-*=, =*.obsolete=, archived); an update writes the new lists for review.
+  Installs use no API (no rate limit; the same tree every time). This is the gitGroup engine's
+  pattern (status, then explicit update) applied to the set.
+- *Layout*: =base= and =.github= are cloned as members; =gitGroup= -> =.github= is made; the gitGroup
+  directory is a plain directory (no more =gitCloneBase=).
+- *=gitistGroup.cs=* --- a plain =.cs= (no plant needed) whose arguments, or stdin, are gitGroup
+  directories: =gitistGroup.cs -i pull /bisos/git/bxRepos/bisos-pip=. Git operations (clone the
+  missing, pull, fetch, status) work without a plant; rule operations delegate to the gitGroup's
+  plant in =<dir>/base/py3/bin/=. A gitGroup is recognized by its =base= and =gitGroup=.
+- *anon / auth* --- from the =/bisos/git/bxRepos= symlink, as =bxRepos-gitist.pcs= does today;
+  auth over ssh with a host alias (=gitLabel=).
+- Then bsip4's =bxRepos-gitist.pcs= and bisos.common's =pbdDict_bxReposRoot= are retired, after a
+  fresh chain on a VM clones the same tree. =bxReposCollection= and =extRepos= follow (open).
+- Continues bxGenesis/start WorkPlan 2.2 ("Modernization of raw-bisos with gitist"), whose first
+  step is =bxRepos-gitist.pcs=.
 
- gitistGroup.cs -i pull /bisos/git/bxRepos/bisos-pip
+** Step 3: reposSeed in sbom
 
+=bisos.sbom='s =reposSeed.py= (an empty placeholder today) declares gitGroupsSets (or gitGroups) an
+sbom needs; =sbom_fullUpdate= clones them by calling gitist's CSU, and an =_isInstalled= check tells
+what is missing. The declaration is sbom's; the work stays gitist's, so gitist stays usable alone.
+
+** Step 4: fileSysSeed and unix
+
+- =fileSysSeed.py= (an empty placeholder today): =directory(path, owner, group, mode, acl)=,
+  =symLink(path, target)=, =file(path, content or template)=, each idempotent with a check. The
+  vocabulary is the pbds' (=directory=, =symLink=, =command=), made into planted data.
+- A =unix= seed: =command(...)= with a check that says whether it is needed, and sudo execution;
+  accounts and groups.
+- gitist WorkPlan Stages 2 and 3 (=unix_csu=, =sudo_csu=) belong here, in sbom, not in gitist.
+- Then =pbdDict_bisosRoot=, =deRunRoot=, =bxoRoot= and stage 2's setup become =-sbom.pcs= files.
+
+** Step 5: Retire bx-bases and bisos.common's pbds
+
+Once steps 2-4 cover them: =bx-bases=, =bx-gitReposBases=, the pbd modules of bisos.common, and
+bxGenesis/provisioners (stage 2).
+
+** Step 6: Collapse the Stages
+
+- =raw-bisos.sh= keeps only what must happen before Python: sudoers, apt sources, =pipx=; then
+  =pipx install bisos.provision= and one sbom.
+- *The bootstrap plants live in =bisos.provision=* (decided): before =/bisos= exists they are run
+  from the pipx install. From =/bisos/core/bsip/bin= on (today's stage 3), plants live in bsip4.
+- One top sbom (=rawBisos-sbom.pcs= with a real =sbomsList=) composes the rest: packages, venvs,
+  repos, fileSys, the platform and site BPOs, Blee. Today's stage-3 script steps become its entries.
+
+** Step 7: Check and Regression
+
+Every seed has a check, so "does this platform match the chain" becomes a read-only walk of the
+sboms --- the =pipPkgsStatus= pattern (bisos.pycs) generalized. Regression: =bro_dockerfiles= on VMs
+(never =raw-bisos.sh= in a container).
+
+* Facilities: Bootstrap, Post-Clone or Both
+
+Each gitist facility says which it is:
+
+| Facility                              | Kind       | Note                                  |
+|---------------------------------------+------------+---------------------------------------|
+| =gitist_reposList=, =_clone=, =_reposClone= | bootstrap  | mass cloning, per org                 |
+| gitGroupsSet clone (step 2)           | bootstrap  | the registry                          |
+| =gitGroupsSet_status= (step 2)          | post-clone | keeps the lists current; uses the API |
+| =gitistGroup.cs= (step 2)               | both       | clones the missing; pull, status      |
+| =gitGroup_status=, =_update=, =_diff=       | post-clone | needs the base repo's plant           |
+| =gitGroup_cachedListUpdate=             | post-clone | Blee's Magit menus                    |
+
+* Known Problems Now
+
+- *The overview repos and the registry* (found 2026-11-15). bisos.common's =pbdDict_bxReposRoot=
+  still clones =bisos-pip/overview=, =blee/overview= (=bx-blee/overview=) and =bxObjects/overview=, and
+  clones neither =bisos-pip/base= nor =blee/base= as a member (=bisos-pip/= is cloned from =.github=,
+  =blee/= from =bx-blee/base=). Deleting the overview repos on GitHub breaks those clone lines on the
+  next install, and the bsip4 symlinks to the gitGroup plants dangle there. Interim fix: add
+  =bisos-pip/base= to =bxRepos-gitist.pcs=; =gitClone('blee/base', 'bx-blee/base')= in bisos.common
+  (gitist does not map =blee= <- =bx-blee= yet); drop the overview lines (a bisos.common release).
+- *The gitGroup directory is itself a repo* on current platforms (=gitCloneBase=). Not fixed by hand:
+  the next install would recreate it. Fixed by step 2.
+- =anon= clones in the registry use =git://=, which GitHub turned off in 2022; they work through the
+  =url.https://.insteadOf git://= that stage 2 sets.
+
+* Open Questions
+
+- Which gitGroups get "all but" exclusion patterns, and which a curated list only (bisos-pip has many
+  retired repos).
+- The name of the ByStar repo holding the gitGroupsSet, and of its plant.
+- Whether =bxReposCollection= (top-level directories and links) and =extRepos= (external repos)
+  become part of the gitGroupsSet or fileSys sboms.
+- How the gitGroupsSet relates to gitGroup-Repos-Profiles (labels): a platform cloning a subset.
+- GitLab gitGroups: the repo that takes =.github='s role.
+- The =unix= seed's boundary with =pkgsSeed= (accounts, python for venvs).
+
+* Decisions
+
+- 2026-11-15 --- =bx-gitRepos= stays beside gitist (not obsoleted).
+- 2026-11-15 --- The gitGroup engine: rules in each gitGroup's own repo; status read-only, update
+  writes only, never stages (WorkPlan 7.1-7.2).
+- 2026-11-15 --- =overview= is not a good name; =base= is. Not renamed on GitHub: the files moved into
+  the existing =base= repos and =overview= is deleted (7.9). Base repos are not packages: the plants
+  are =.spcs= on PATH through bsip4.
+- 2026-11-15 --- A gitGroup has two special repos, =base= and =gitGroup= (-> =.github=); the gitGroup
+  directory is a plain directory. The parent-as-repo layout is fixed in the chain, not by hand.
+- 2026-11-15 --- Bootstrap plants live in =bisos.provision=.
+- 2026-11-15 --- The gitGroupsSet lives in a repo of its own in the =ByStar= organization.
+- 2026-11-15 --- Membership: explicit lists when installing, "all but" when editing (option C).
+- 2026-11-15 --- Order: repos (step 2) before fileSys (step 4).
+- 2026-11-02 --- (bxGenesis/start 2.2) Chain plants live in =/bisos/core/bsip/bin= (bsip4), not in a
+  package's bin: a change is a push, not a release. Stage-3 plants use =#!/bin/env python= (bisos3).
+- 2026-11-02 --- (bxGenesis/start 2.2) Anon then auth: the =/bisos/git/bxRepos= symlink chooses.
+
+# Local Variables:
+# eval: (setq-local toc-org-max-depth 4)
+# End:
