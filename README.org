@@ -36,6 +36,7 @@ bisos.gitist is a python package that uses the [[https://github.com/bisos-pip/py
   - [[#the-gitgroup-directory][The gitGroup Directory]]
   - [[#gitgroup-plant-rules-and-statuses][gitGroup Plant, Rules and Statuses]]
   - [[#gitgroupsset-and-gitgroupssetserver][gitGroupsSet and gitGroupsSetServer]]
+  - [[#gitaccount][gitAccount]]
   - [[#gitgroup-repos-profile][gitGroup-Repos-Profile]]
   - [[#anon-and-auth][anon and auth]]
 - [[#gitist-layers][Gitist Layers]]
@@ -145,6 +146,11 @@ holds its local name and its name on the server, and its *membership*: the repos
 
 A *<<gitGroupsSetServer>>* is what a gitGroupsSet needs about the git server holding its repos: its
 type (github, gitlab), its base address, and a reference to its credentials.
+
+** gitAccount
+
+A <<gitAccount>> (also called  *<<gitGroupsSetServerAcct>>* ) is the account used on the
+[[gitServer]] to manage and control  [[gitGroupsSetServer]] s. 
 
 ** gitGroup-Repos-Profile
 
