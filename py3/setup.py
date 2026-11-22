@@ -58,6 +58,7 @@ requires = [
 "bisos.common",
 "bisos.csPlayer",
 "bisos.csSeed",
+"bisos.sbom",
 "by",
 "PyGithub",
 "setuptools==75.8.0",
@@ -70,6 +71,8 @@ requires = [
 
 scripts = [ 
 'bin/bxoGitlab.cs',
+'bin/git-sbom.pcs',
+'bin/gitCreds-sbom.pcs',
 'bin/gitGroup-seed.cs',
 'bin/gitist-seed.cs',
 'bin/pub-anon-github-gitist.pcs',

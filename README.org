@@ -206,6 +206,27 @@ bisos-pip_gitGroup.spcs -i gitGroup_cachedListUpdate            # the list for B
 Plants today: =bisos-pip/base/py3/bin/bisos-pip_gitGroup.spcs=, =blee/base/py3/bin/blee_gitGroup.spcs=.
 =bx-gitRepos= (=/bisos/core/bsip/bin=) stays beside this.
 
+** Git Tooling: git-sbom.pcs and gitCreds-sbom.pcs
+
+Two =-sbom.pcs= (bisos.sbom's =pkgsSeed=) for the programs that cloning and committing need. They were
+one =git-sbom.pcs= in =bisos/bsip4/bin=, which no provisioner ran; split and moved here 2026-11-22.
+
+| sbom                  | Installs                                     | Interaction | Run by                       |
+|-----------------------+----------------------------------------------+-------------+------------------------------|
+| =git-sbom.pcs=        | =git=, =git-lfs=, =gitleaks=                 | none        | =bsipProvision.sh=, before =bxRepos-gitist.pcs= |
+| =gitCreds-sbom.pcs=   | =wget=, Git Credential Manager (pinned .deb, then =configure=, =credentialStore gpg=), =gh= | after =gpg-sbom.pcs= key setup | by hand |
+
+#+begin_src bash
+git-sbom.pcs -i aptPkgs_list       # what it would install
+git-sbom.pcs -i sbom_fullUpdate
+gitCreds-sbom.pcs -i readme        # the order: git-sbom, gpg-sbom, key init, gitCreds-sbom
+#+end_src
+
+=git-lfs=: the package does not register the LFS filters; a user's =~/.gitconfig= does (=git lfs install=)
+or the platform does (=git lfs install --system=). A =~/.gitconfig= with =filter.lfs.required= and no
+=git-lfs= program makes every git command in an LFS repo fail. =gitCreds-sbom.pcs='s GCM step rewrites
+=credential.helper= in =~/.gitconfig=; do not run it where another helper is in use.
+
 * Post-Installation Setup
 
 For authenticated access, run the provisioning script to create the credentials directory and
