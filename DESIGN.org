@@ -225,6 +225,9 @@ Each gitist facility says which it is:
   (gitist does not map =blee= <- =bx-blee= yet); drop the overview lines (a bisos.common release).
 - *The gitGroup directory is itself a repo* on current platforms (=gitCloneBase=). Not fixed by hand:
   the next install would recreate it. Fixed by step 2.
+- Both items above: the interim fix is bxGenesis/base AI-WorkPlan Stage 2 (2026-11-22; 2.2 in
+  bisos.common =pbdDict_bxReposRoot= (=gitGroupDir()=, no overview lines) and =bxRepos-gitist.pcs=;
+  uncommitted, a release and a VM run pending) --- step 2's Layout bullet, ahead of the rest of it.
 - =anon= clones in the registry use =git://=, which GitHub turned off in 2022; they work through the
   =url.https://.insteadOf git://= that stage 2 sets.
 
