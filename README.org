@@ -124,9 +124,11 @@ Each member, against each rule, has a *status*:
 | =stale=   | an exact earlier version of the template (git history) | writes it              |
 | =drift=   | differs from every template version, not declared      | with =--replaceDrift=    |
 | =custom=  | differs, declared in the plant's =customRepos=           | never                  |
-| =tracked= | a =notTracked= path is tracked                           | prints =git rm --cached= |
+| =tracked= | a =notTracked= path is tracked                           | prints =git rm --cached=; =gitGroup_untrack= runs it |
 
-Status is read-only; update writes files only and never stages or commits.
+Status is read-only; update writes files only and never stages or commits. =gitGroup_untrack= is
+the one verb that stages: =git rm --cached= of the =tracked= paths (the files stay on disk); the commit
+is the user's.
 
 A gitGroup's *cached list*, =/bisos/var/gitGroup/<gitGroup>/cachedList.<auth|anon|other>=, holds the
 real paths of its repos. Blee's "Apps -> GitHub MAGIT Menu -> BISOS-Magit gitGroups" reads it.
@@ -200,6 +202,7 @@ bisos-pip_gitGroup.spcs -i gitGroup_status                      # read-only: eac
 bisos-pip_gitGroup.spcs -i gitGroup_diff <repo> .gitignore      # template -> the member's file
 bisos-pip_gitGroup.spcs -i gitGroup_update                      # writes missing and stale files
 bisos-pip_gitGroup.spcs -i gitGroup_update --replaceDrift=true  # and drifted ones
+bisos-pip_gitGroup.spcs -i gitGroup_untrack                     # git rm --cached the tracked notTracked paths
 bisos-pip_gitGroup.spcs -i gitGroup_cachedListUpdate            # the list for Blee's Magit menus
 #+end_src
 

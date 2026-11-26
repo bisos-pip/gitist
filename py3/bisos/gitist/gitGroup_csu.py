@@ -302,6 +302,23 @@ def update(repoNames: list[str] | None = None, replaceDrift: bool = False) -> li
     return done
 
 
+def untrack(repoNames: list[str] | None = None) -> list[str]:
+    """For every =tracked= notTracked finding, =git rm --cached= its paths: the files stay on disk, the
+    deletion is staged (only that), and the commit stays the user's. The one place that stages."""
+    info = _info()
+    assert info.gitGroupDir is not None
+    done = []
+    for finding in statusAll(repoNames):
+        if finding.status != "tracked":
+            continue
+        repo = info.gitGroupDir / finding.repo
+        result = _git(repo, "rm", "--cached", "--quiet", "--", *finding.detail.split())
+        if result.returncode != 0:
+            raise ValueError(f"{finding.repo}: git rm --cached failed: {result.stderr.decode().strip()}")
+        done.append(f"{finding.repo}: untracked (staged): {finding.detail}")
+    return done
+
+
 ####+BEGIN: b:py3:cs:orgItem/section :title "Cached Lists" :comment "for Blee's Magit menus"
 """ #+begin_org
 *  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  /Section/    [[elisp:(outline-show-subtree+toggle)][||]] *Cached Lists* for Blee's Magit menus  [[elisp:(org-cycle)][| ]]
@@ -406,6 +423,10 @@ class examples_csu(cs.Cmnd):
         cmnd('gitGroup_update', comment=" # missing and stale files; prints git rm --cached lines")
         cmnd('gitGroup_update', pars=od([('replaceDrift', 'true')]), comment=" # drift too (after gitGroup_diff)")
         cmnd('gitGroup_update', args=firstRepo, comment=" # one member")
+
+        cs.examples.menuChapter('=Untrack: stages only the git rm --cached of notTracked paths; never commits=')
+        cmnd('gitGroup_untrack', comment=" # every member whose notTracked paths are tracked")
+        cmnd('gitGroup_untrack', args=firstRepo, comment=" # one member")
 
         cs.examples.menuChapter("=Cached list, for Blee's Magit menus=")
         cmnd('gitGroup_cachedListUpdate', comment=f" # writes {cachedListPath(info)}")
@@ -609,6 +630,63 @@ class gitGroup_update(cs.Cmnd):
             for line in done:
                 print(line)
         return cmndOutcome.set(opError=b.OpError.Success, opResults=f"{len(done)} actions")
+
+####+BEGIN: b:py3:cs:method/args :methodName "cmndArgsSpec" :methodType "anyOrNone" :retType "bool" :deco "default" :argsList "self"
+    """ #+begin_org
+**  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  Mtd-T-anyOrNone [[elisp:(outline-show-subtree+toggle)][||]] /cmndArgsSpec/ deco=default  deco=default  [[elisp:(org-cycle)][| ]]
+    #+end_org """
+    @cs.track(fnLoc=True, fnEntry=True, fnExit=True)
+    def cmndArgsSpec(self, ):
+####+END:
+        """
+***** Cmnd Args Specification
+"""
+        cmndArgsSpecDict = cs.CmndArgsSpecDict()
+        cmndArgsSpecDict.argsDictAdd(
+            argPosition="0&9999",
+            argName="repoNames",
+            argDefault='',
+            argChoices=[],
+            argDescription="Member repo names; none: all members"
+        )
+        return cmndArgsSpecDict
+
+
+####+BEGIN: b:py3:cs:cmnd/classHead :cmndName "gitGroup_untrack" :comment "" :extent "verify" :ro "cli" :parsMand "" :parsOpt "" :argsMin 0 :argsMax 9999 :pyInv ""
+""" #+begin_org
+*  _[[elisp:(blee:menu-sel:outline:popupMenu)][±]]_ _[[elisp:(blee:menu-sel:navigation:popupMenu)][Ξ]]_ [[elisp:(outline-show-branches+toggle)][|=]] [[elisp:(bx:orgm:indirectBufOther)][|>]] *[[elisp:(blee:ppmm:org-mode-toggle)][|N]]*  CmndSvc-   [[elisp:(outline-show-subtree+toggle)][||]] <<gitGroup_untrack>>  =verify= argsMax=9999 ro=cli   [[elisp:(org-cycle)][| ]]
+#+end_org """
+class gitGroup_untrack(cs.Cmnd):
+    cmndParamsMandatory = [ ]
+    cmndParamsOptional = [ ]
+    cmndArgsLen = {'Min': 0, 'Max': 9999,}
+
+    @cs.track(fnLoc=True, fnEntry=True, fnExit=True)
+    def cmnd(self,
+             rtInv: cs.RtInvoker,
+             cmndOutcome: b.op.Outcome,
+             argsList: typing.Optional[list[str]]=None,  # CsArgs
+    ) -> b.op.Outcome:
+
+        failed = b_io.eh.badOutcome
+        callParamsDict = {}
+        if self.invocationValidate(rtInv, cmndOutcome, callParamsDict, argsList).isProblematic():
+            return failed(cmndOutcome)
+        cmndArgsSpecDict = self.cmndArgsSpec()
+####+END:
+        self.cmndDocStr(f""" #+begin_org
+** [[elisp:(org-cycle)][| *CmndDesc:* | ]] git rm --cached the notTracked paths a member (or every member) still
+tracks: the files stay on disk and only that deletion is staged; the commit is the user's.
+        #+end_org """)
+        repoNames = self.cmndArgsGet("0&9999", cmndArgsSpecDict, argsList)
+        try:
+            done = untrack(repoNames or None)
+        except ValueError as err:
+            return failed(cmndOutcome.set(opError=b.OpError.Failure, opErrInfo=str(err)))
+        if rtInv.outs:
+            for line in done:
+                print(line)
+        return cmndOutcome.set(opError=b.OpError.Success, opResults=f"{len(done)} members untracked")
 
 ####+BEGIN: b:py3:cs:method/args :methodName "cmndArgsSpec" :methodType "anyOrNone" :retType "bool" :deco "default" :argsList "self"
     """ #+begin_org

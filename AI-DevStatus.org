@@ -12,6 +12,10 @@ Companion docs: AI-WORKFLOW.org, AI-Activity.org (the shared bisos-pip guidance)
 
 * Current State (2026-11-15)
 
+- 2026-11-26 (from a bisos-pip/b session): =gitGroup_untrack= added (=gitGroup_csu.py= =untrack()=):
+  =git rm --cached= of every =tracked= notTracked finding, so the plant's generated-file rule is
+  enforced in one command instead of 56 hand-run lines. The one verb that stages; it never commits.
+  Run for bisos-pip: 56 members untracked =py3/README.rst= / =py3/_description.org=; status then all ok.
 - AI-Activity migrated to the current layout (it was an old-layout sub); see AI-WorkPlan.org's header.
 - *gitGroup consistency engine* (WorkPlan Stage 7; bisos-pip/overview WorkPlan Stage 5), built and
   tested, uncommitted: =gitGroup_seed.py=, =gitGroup_seedInfo.py=, =gitGroup_csu.py=,
