@@ -52,7 +52,7 @@ def pkgVersion():
 # b:py3:pypi:setup/requires :extras ; :requirements "requirements.txt" (bring here requirements.txt)
 ####+BEGIN: b:py3:pypi:setup/requires :extras ("PyGithub")
 
-requires = [ 
+requires = [
 "bisos",
 "bisos.b",
 "bisos.common",
@@ -69,12 +69,12 @@ requires = [
 # b:py3:pypi:setup/scripts :comment
 ####+BEGIN: b:py3:pypi:setup/scripts :comment ""
 
-scripts = [ 
+scripts = [
 'bin/bxoGitlab.cs',
-'bin/git-sbom.pcs',
 'bin/gitCreds-sbom.pcs',
 'bin/gitGroup-seed.cs',
 'bin/gitist-seed.cs',
+'bin/git-sbom.pcs',
 'bin/pub-anon-github-gitist.pcs',
 'bin/pub-anon-gitlab-gitist.pcs',
 'bin/pub-auth-github-gitist.pcs',
@@ -85,7 +85,7 @@ scripts = [
 # b:py3:pypi:setup/dataFiles :comment
 ####+BEGIN: b:py3:pypi:setup/dataFiles :comment "Instead of ./MANIFEST.in or in pyproject.toml"
 
-data_files = [ 
+data_files = [
 ('',  ['lh-agpl3-LICENSE.txt', '_description.org', 'README.rst']),
 ]
 ####+END:
